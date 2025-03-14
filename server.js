@@ -74,7 +74,7 @@ server.use(express.static("public"));
 
 server.use(
   cors({
-    origin: [LOCAL_URL, VERCEL_URL],
+    origin: ["https://crm-frontend-project.vercel.app"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
     // allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
@@ -214,6 +214,15 @@ server.get("/transactions", authMiddleware, transactionHandler);
 server.post("/transaction/:id", authMiddleware, addTransactionHandler);
 
 server.delete("/transaction/:id", authMiddleware, deleteTransactionHandler);
+
+server.get("/server", async (req, resp) => {
+  try {
+    return resp.json({ message: "server run successfuly" });
+  } catch (e) {
+    console.log(e.message);
+  }
+});
+
 
 server.listen(PORT, () => {
   try {
