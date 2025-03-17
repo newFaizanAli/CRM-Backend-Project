@@ -6,25 +6,25 @@ const { userModel } = require("../models");
 const { SECRETKEY } = require("../utilits/const");
 
 const checkAuthHandler = async (req, res) => {
-    try {
-      const id = req.user.userid;
-      const user = await userModel.findById(id);
-      if (user) {
-        return res.json({
-          token: true,
-          loginUser: {
-            name: user.name,
-            type: user.usertype,
-            email: user.email,
-          },
-        });
-      }
-  
-      // return res.json({ token: true, usertype: req.user.usertype });
-    } catch (e) {
-      console.log(e.message);
+  try {
+    const id = req.user.userid;
+    const user = await userModel.findById(id);
+    if (user) {
+      return res.json({
+        token: true,
+        loginUser: {
+          name: user.name,
+          type: user.usertype,
+          email: user.email,
+        },
+      });
     }
+
+    // return res.json({ token: true, usertype: req.user.usertype });
+  } catch (e) {
+    console.log(e.message);
   }
+};
 
 const signinHandler = async (req, resp) => {
   try {
@@ -79,6 +79,7 @@ const signinHandler = async (req, resp) => {
       return resp.json({
         message: "Incorrect password",
         login: false,
+        success: false,
       });
     }
   } catch (error) {
@@ -109,23 +110,26 @@ const signupHandler = async (req, resp) => {
 };
 
 const signoutHandler = (req, resp) => {
+  resp.clearCookie("token", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "None",
+    path: "/",
+    maxAge: 0,
+  });
 
-    resp.clearCookie("token", {
-      httpOnly: true,
-      secure: true,
-      sameSite: "None",
-      path: "/",
-      maxAge: 0,
-    });
-
-    resp.set("Cache-Control", "no-store");
-    resp.set("Pragma", "no-cache");
-    resp.set("Expires", "0");
+  resp.set("Cache-Control", "no-store");
+  resp.set("Pragma", "no-cache");
+  resp.set("Expires", "0");
 
   // resp.cookie("token", "");
 
   resp.json({ token: false });
 };
 
-
-module.exports = { signupHandler, signinHandler, signoutHandler, checkAuthHandler };
+module.exports = {
+  signupHandler,
+  signinHandler,
+  signoutHandler,
+  checkAuthHandler,
+};

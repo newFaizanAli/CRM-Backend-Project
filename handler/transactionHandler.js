@@ -75,9 +75,65 @@ const deleteTransactionHandler = async (req, resp) => {
   }
 };
 
+
+const updateTransactionHandler = async (req, res) => {
+  const { 
+    _id,
+    transactionType,
+    paymentType,
+    amount,
+    relatedEntity,
+    entityId,
+    status,
+    createdAt,
+   } = req.body;
+
+  try {
+ 
+
+    if (!_id ||
+      !transactionType ||
+      !paymentType || 
+      !amount ||
+      !relatedEntity ||
+      !entityId ||
+      !status ||
+      !createdAt
+    ) {
+      return res.json({ message: "Missing required fields", success: false });
+    }
+
+    const existingTransaction = await transactionModel.findById(_id);
+
+    if (!existingTransaction) {
+      return res.json({ message: "warehouse not found", success: false });
+    }
+
+    existingTransaction.transactionType = transactionType;
+    existingTransaction.paymentType = paymentType;
+    existingTransaction.amount = amount;
+    existingTransaction.relatedEntity = relatedEntity;
+    existingTransaction.entityId = entityId;
+    existingTransaction.status = status;
+    existingTransaction.createdAt = createdAt;
+
+    await existingTransaction.save();
+
+    return res.json({
+      message: "Transaction updated successfully!",
+      success: true,
+    });
+  } catch (error) {
+    console.log(error.message);
+    return res.json({ message: "Internal server error", success: false });
+  }
+};
+
+
 module.exports = {
   newTransactionHandler,
   transactionHandler,
   addTransactionHandler,
-  deleteTransactionHandler
+  deleteTransactionHandler,
+  updateTransactionHandler
 };

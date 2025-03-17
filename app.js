@@ -56,6 +56,7 @@ const {
   addTransactionHandler,
   transactionHandler,
   deleteTransactionHandler,
+  updateTransactionHandler,
 } = require("./handler/transactionHandler");
 
 const cookieParser = require("cookie-parser");
@@ -214,6 +215,9 @@ server.get("/transactions", authMiddleware, transactionHandler);
 server.post("/transaction/:id", authMiddleware, addTransactionHandler);
 
 server.delete("/transaction/:id", authMiddleware, deleteTransactionHandler);
+
+server.put("/transaction", authMiddleware, updateTransactionHandler);
+
 
 server.get("/server", async (req, resp) => {
   try {
