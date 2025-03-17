@@ -75,7 +75,7 @@ server.use(express.static("public"));
 
 server.use(
   cors({
-    origin: [VERCEL_URL, LOCAL_URL],
+    origin: ["https://crm-frontend-project.vercel.app"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
     // allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
