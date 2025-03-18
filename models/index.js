@@ -61,7 +61,7 @@ const userSchema = new mongoose.Schema({
   },
   usertype: {
     type: String,
-    enum: ["admin", "user", "manager"],
+    enum: ["admin", "user", "manager", "subadmin"],
     required: true,
   },
   password: {
@@ -176,6 +176,60 @@ const TransactionSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+// CRM
+
+
+// Lead Schema
+
+const leadSchema = new mongoose.Schema({
+  code: String,
+  name: String,
+  email: { type: String },
+  phone: String,
+  company: String,
+  source: String, 
+  status: { type: String, enum: ["new", "contacted", "qualified", "converted"] },
+  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "users" },
+  notes: { type: String },
+  createdAt: { type: Date, default: Date.now },
+});
+
+// Customer Schema
+
+// const customerSchema = new mongoose.Schema({
+//   name: String,
+//   email: { type: String, unique: true },
+//   phone: String,
+//   company: String,
+//   status: { type: String, enum: ["Active", "Inactive"] },
+//   interactions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Interaction" }],
+//   createdAt: { type: Date, default: Date.now },
+// });
+
+// Opportunity Schema (Sales Pipeline)
+
+// const opportunitySchema = new mongoose.Schema({
+//   customer: { type: mongoose.Schema.Types.ObjectId, ref: "Customer" },
+//   stage: { type: String, enum: ["New", "Qualified", "Proposal Sent", "Closed Won", "Closed Lost"] },
+//   value: Number, // Deal amount
+//   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+//   expectedCloseDate: Date,
+//   createdAt: { type: Date, default: Date.now },
+// });
+
+// Interaction Schema (Calls, Emails, Meetings)
+
+// const interactionSchema = new mongoose.Schema({
+//   customer: { type: mongoose.Schema.Types.ObjectId, ref: "Customer" },
+//   type: { type: String, enum: ["Call", "Email", "Meeting"] },
+//   details: String,
+//   date: { type: Date, default: Date.now },
+//   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+// });
+
+
+
+
 module.exports = {
   userModel: mongoose.model("users", userSchema),
   categoryModel: mongoose.model("category", categorySchema),
@@ -186,4 +240,6 @@ module.exports = {
   customerModel: mongoose.model("customer", CustomerSchema),
   saleModel: mongoose.model("sales", SalesOrderSchema),
   transactionModel: mongoose.model("transaction", TransactionSchema),
+
+  leadModel: mongoose.model("lead", leadSchema)
 };

@@ -95,6 +95,7 @@ server.use(cookieParser());
 server.use(bodyParser.urlencoded({ extended: true }));
 
 const { SECRETKEY } = require("./utilits/const");
+const { usersHandler, deleteUserHandler, updateUserHandler, newLeadHandler, leadHandler, addLeadHandler, deleteLeadHandler } = require("./handler/crmHandler");
 
 // middleware
 
@@ -217,6 +218,26 @@ server.post("/transaction/:id", authMiddleware, addTransactionHandler);
 server.delete("/transaction/:id", authMiddleware, deleteTransactionHandler);
 
 server.put("/transaction", authMiddleware, updateTransactionHandler);
+
+// CRM
+
+// user
+
+server.get("/users", authMiddleware, usersHandler);
+
+server.delete("/user/:id", authMiddleware, deleteUserHandler);
+
+server.put("/user", authMiddleware, updateUserHandler);
+
+// leads
+
+server.get("/newleads", authMiddleware, newLeadHandler);
+
+server.get("/leads", authMiddleware, leadHandler);
+
+server.post("/lead", authMiddleware, addLeadHandler);
+
+server.delete("/lead/:id", authMiddleware, deleteLeadHandler);
 
 
 server.get("/server", async (req, resp) => {
