@@ -49,6 +49,7 @@ const {
   deleteSaleHandler,
   updateSaleHandler,
   confirmSaleHandler,
+  deleteCustomerHandler,
 } = require("./handler/sellingHandler");
 
 const {
@@ -95,7 +96,7 @@ server.use(cookieParser());
 server.use(bodyParser.urlencoded({ extended: true }));
 
 const { SECRETKEY } = require("./utilits/const");
-const { usersHandler, deleteUserHandler, updateUserHandler, newLeadHandler, leadHandler, addLeadHandler, deleteLeadHandler } = require("./handler/crmHandler");
+const { usersHandler, deleteUserHandler, updateUserHandler, newLeadHandler, leadHandler, addLeadHandler, deleteLeadHandler, convertLeadHandler, newDealHandler, addDealHandler, dealHandler, updateDealHandler, updateLeadHandler } = require("./handler/crmHandler");
 
 // middleware
 
@@ -193,6 +194,8 @@ server.get("/customers", authMiddleware, customersHandler);
 
 server.put("/customer", authMiddleware, updateCustomersHandler);
 
+server.delete("/customer/:id", authMiddleware, deleteCustomerHandler);
+
 // selling
 
 server.post("/sale/add", authMiddleware, addSellingHandler);
@@ -239,6 +242,20 @@ server.post("/lead", authMiddleware, addLeadHandler);
 
 server.delete("/lead/:id", authMiddleware, deleteLeadHandler);
 
+server.post("/lead/convert/:id", authMiddleware, convertLeadHandler);
+
+server.put("/lead", authMiddleware, updateLeadHandler);
+
+
+// deals
+
+server.get("/newdeal", authMiddleware, newDealHandler);
+
+server.get("/deals", authMiddleware, dealHandler);
+
+server.post("/deal", authMiddleware, addDealHandler);
+
+server.put("/deal", authMiddleware, updateDealHandler);
 
 server.get("/server", async (req, resp) => {
   try {

@@ -72,6 +72,20 @@ const updateCustomersHandler = async (req, res) => {
   }
 };
 
+const deleteCustomerHandler = async (req, resp) => {
+  try {
+    const { id } = req.params;
+    await customerModel.findByIdAndDelete(id);
+
+    return resp.json({
+      message: "customer deleted successfuly",
+      success: true,
+    });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
 // sellling
 
 const newSellingHandler = async (req, resp) => {
@@ -236,6 +250,7 @@ module.exports = {
   addCustomerHandler,
   customersHandler,
   updateCustomersHandler,
+  deleteCustomerHandler,
 
   newSellingHandler,
   addSellingHandler,
