@@ -1,4 +1,11 @@
-const { userModel, leadModel, customerModel, dealModel } = require("../models");
+const {
+  userModel,
+  leadModel,
+  customerModel,
+  dealModel,
+  projectModel,
+  taskModel,
+} = require("../models");
 const { codeCreator } = require("../utilits/function");
 
 const usersHandler = async (req, resp) => {
@@ -179,8 +186,6 @@ const updateLeadHandler = async (req, res) => {
   } = req.body;
 
   try {
-   
-
     const existingLead = await leadModel.findById(_id);
 
     if (!existingLead) {
@@ -312,9 +317,256 @@ const updateDealHandler = async (req, res) => {
   }
 };
 
-// intrection
+const deleteDealHandler = async (req, resp) => {
+  try {
+    const { id } = req.params;
 
+    await dealModel.findByIdAndDelete(id);
 
+    return resp.json({
+      message: "deal deleted successfuly",
+      success: true,
+    });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+// project
+
+const newProjectHandler = async (req, resp) => {
+  try {
+    let users = await userModel.find().select("_id name");
+    let deals = await dealModel.find().select("_id code");
+    let customers = await customerModel.find().select("_id name code");
+
+    return resp.json({ users, deals, customers });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const projectHandler = async (req, resp) => {
+  try {
+    let projects = await projectModel
+      .find()
+      .populate("assignedTo", "_id name")
+      .populate("customer", "_id name company code")
+      .populate("deal", "_id code");
+
+    return resp.json({ projects });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const addProjectHandler = async (req, resp) => {
+  try {
+    let {
+      customer,
+      name,
+      description,
+      assignedTo,
+      startDate,
+      endDate,
+      deal,
+      status,
+    } = req.body;
+
+    const code = await codeCreator({ model: projectModel, codeStr: "PROJ" });
+
+    const newProject = await projectModel.create({
+      code: code,
+      customer,
+      name,
+      description,
+      assignedTo,
+      startDate,
+      endDate,
+      deal,
+      status,
+    });
+
+    await newProject.save();
+
+    return resp.json({
+      message: "Project added successfuly",
+      success: true,
+    });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const deleteProjectHandler = async (req, resp) => {
+  try {
+    const { id } = req.params;
+
+    await projectModel.findByIdAndDelete(id);
+
+    return resp.json({
+      message: "project deleted successfuly",
+      success: true,
+    });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const updateProjectHandler = async (req, res) => {
+  let {
+    _id,
+    customer,
+    name,
+    description,
+    assignedTo,
+    startDate,
+    endDate,
+    deal,
+    status,
+  } = req.body;
+
+  try {
+    if (!_id) {
+      return res.json({ message: "Missing required fields", success: false });
+    }
+
+    const existingProject = await projectModel.findById(_id);
+
+    if (!existingProject) {
+      return res.json({ message: "project not found", success: false });
+    }
+
+    existingProject.assignedTo = assignedTo;
+    existingProject.deal = deal;
+    existingProject.startDate = startDate;
+    existingProject.endDate = endDate;
+    existingProject.description = description;
+    existingProject.customer = customer;
+    existingProject.name = name;
+    existingProject.status = status;
+
+    await existingProject.save();
+
+    return res.json({
+      message: "Project updated successfully!",
+      success: true,
+    });
+  } catch (error) {
+    console.log(error.message);
+    return res.json({ message: "Internal server error", success: false });
+  }
+};
+
+// task
+
+const newTaskHandler = async (req, resp) => {
+  try {
+    let users = await userModel.find().select("_id name");
+    let projects = await projectModel.find().select("_id code name");
+
+    return resp.json({ users, projects });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const taskHandler = async (req, resp) => {
+  try {
+    let tasks = await taskModel
+      .find()
+      .populate("assignedTo", "_id name")
+      .populate("project", "_id code name");
+
+    return resp.json({ tasks });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const addTaskHandler = async (req, resp) => {
+  try {
+    let {
+      title,
+      description,
+      project,
+      assignedTo,
+      dueDate,
+      status,
+      priority,
+      taskType,
+    } = req.body;
+
+    const code = await codeCreator({ model: taskModel, codeStr: "TASK" });
+
+    const newTask = await taskModel.create({
+      code: code,
+      title,
+      description,
+      project,
+      assignedTo,
+      dueDate,
+      status,
+      priority,
+      taskType,
+      followUps: [],
+    });
+
+    await newTask.save();
+
+    return resp.json({
+      message: "Task added successfuly",
+      success: true,
+    });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const updateTaskHandler = async (req, res) => {
+  let {
+    _id,
+    title,
+    description,
+    project,
+    assignedTo,
+    dueDate,
+    status,
+    priority,
+    taskType,
+  } = req.body;
+
+  try {
+    if (!_id) {
+      return res.json({ message: "Missing required fields", success: false });
+    }
+
+    const existingTask = await taskModel.findById(_id);
+
+    if (!existingTask) {
+      return res.json({ message: "task not found", success: false });
+    }
+
+    existingTask.title = title;
+    existingTask.description = description;
+    existingTask.project = project;
+    existingTask.dueDate = dueDate;
+    existingTask.assignedTo = assignedTo;
+    existingTask.priority = priority;
+    existingTask.taskType = taskType;
+    existingTask.status = status;
+
+    await existingTask.save();
+
+    return res.json({
+      message: "Task updated successfully!",
+      success: true,
+    });
+  } catch (error) {
+    console.log(error.message);
+    return res.json({ message: "Internal server error", success: false });
+  }
+};
 
 module.exports = {
   usersHandler,
@@ -332,4 +584,16 @@ module.exports = {
   dealHandler,
   addDealHandler,
   updateDealHandler,
+  deleteDealHandler,
+
+  newProjectHandler,
+  projectHandler,
+  addProjectHandler,
+  deleteProjectHandler,
+  updateProjectHandler,
+
+  newTaskHandler,
+  taskHandler,
+  addTaskHandler,
+  updateTaskHandler
 };

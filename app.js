@@ -96,7 +96,7 @@ server.use(cookieParser());
 server.use(bodyParser.urlencoded({ extended: true }));
 
 const { SECRETKEY } = require("./utilits/const");
-const { usersHandler, deleteUserHandler, updateUserHandler, newLeadHandler, leadHandler, addLeadHandler, deleteLeadHandler, convertLeadHandler, newDealHandler, addDealHandler, dealHandler, updateDealHandler, updateLeadHandler } = require("./handler/crmHandler");
+const { usersHandler, deleteUserHandler, updateUserHandler, newLeadHandler, leadHandler, addLeadHandler, deleteLeadHandler, convertLeadHandler, newDealHandler, addDealHandler, dealHandler, updateDealHandler, updateLeadHandler, newProjectHandler, projectHandler, addProjectHandler, deleteProjectHandler, deleteDealHandler, updateProjectHandler, newTaskHandler, taskHandler, addTaskHandler, updateTaskHandler } = require("./handler/crmHandler");
 
 // middleware
 
@@ -257,6 +257,32 @@ server.post("/deal", authMiddleware, addDealHandler);
 
 server.put("/deal", authMiddleware, updateDealHandler);
 
+server.delete("/deal/:id", authMiddleware, deleteDealHandler);
+
+
+// project
+
+server.get("/newproject", authMiddleware, newProjectHandler);
+
+server.get("/projects", authMiddleware, projectHandler);
+
+server.post("/project", authMiddleware, addProjectHandler);
+
+server.delete("/project/:id", authMiddleware, deleteProjectHandler);
+
+server.put("/project", authMiddleware, updateProjectHandler);
+
+// task
+
+server.get("/newtask", authMiddleware, newTaskHandler);
+
+server.get("/tasks", authMiddleware, taskHandler);
+
+server.post("/task", authMiddleware, addTaskHandler);
+ 
+server.put("/task", authMiddleware, updateTaskHandler);
+
+
 server.get("/server", async (req, resp) => {
   try {
     return resp.json({ message: "server run successfuly" });
@@ -264,7 +290,6 @@ server.get("/server", async (req, resp) => {
     console.log(e.message);
   }
 });
-
 
 server.listen(PORT, () => {
   try {

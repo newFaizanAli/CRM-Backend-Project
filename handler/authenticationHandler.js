@@ -111,6 +111,7 @@ const signupHandler = async (req, resp) => {
 };
 
 const signoutHandler = (req, resp) => {
+
   resp.clearCookie("token", {
     httpOnly: true,
     secure: true,

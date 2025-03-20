@@ -221,6 +221,10 @@ const dealSchema = new mongoose.Schema({
 // project schema
 
 const projectSchema = new mongoose.Schema({
+  code: {
+    type: String,
+    required: true,
+  },
   name: {
     type: String,
     required: true,
@@ -239,8 +243,8 @@ const projectSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["Pending", "In Progress", "Completed", "On Hold", "Cancelled"],
-    default: "Pending",
+    enum: ["pending", "in-progress", "completed", "on-hold", "cancelled"],
+    default: "pending",
   },
   startDate: {
     type: Date,
@@ -260,7 +264,12 @@ const projectSchema = new mongoose.Schema({
   },
 });
 
+// task schema
+
 const taskSchema = new mongoose.Schema({
+  code: {
+    type: String,
+  },
   title: {
     type: String,
     required: true,
@@ -271,10 +280,6 @@ const taskSchema = new mongoose.Schema({
   project: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "project",
-  },
-  opportunity: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "opportunityModel",
   },
   assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
@@ -287,13 +292,13 @@ const taskSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["Pending", "In Progress", "Completed", "Overdue"],
-    default: "Pending",
+    enum: ["pending", "in-progress", "completed", "overdue"],
+    default: "pending",
   },
   priority: {
     type: String,
-    enum: ["Low", "Medium", "High", "Critical"],
-    default: "Medium",
+    enum: ["low", "medium", "high", "critical"],
+    default: "medium",
   },
   followUps: [
     {
@@ -308,22 +313,21 @@ const taskSchema = new mongoose.Schema({
   taskType: {
     type: String,
     enum: [
-      "General",
-      "Follow-up",
-      "Sales",
-      "Customer Support",
-      "Lead Qualification",
-      "Opportunity Management",
-      "Project Management",
-      "Administrative",
-      "Escalation",
-      "Custom",
+      "general",
+      "follow-up",
+      "sales",
+      "customer-support",
+      "lead-qualification",
+      "opportunity-management",
+      "project-management",
+      "administrative",
+      "escalation",
+      "custom",
     ],
-    default: "General",
+    default: "general",
   },
 });
 
-module.exports = mongoose.model("task", taskSchema);
 
 // Interaction Schema (Calls, Emails, Meetings)
 
@@ -349,4 +353,6 @@ module.exports = {
   leadModel: mongoose.model("lead", leadSchema),
   dealModel: mongoose.model("deal", dealSchema),
   projectModel: mongoose.model("project", projectSchema),
+  taskModel: mongoose.model("task", taskSchema),
+  
 };
