@@ -5,6 +5,7 @@ const {
   dealModel,
   projectModel,
   taskModel,
+  interactionModel,
 } = require("../models");
 const { codeCreator } = require("../utilits/function");
 
@@ -523,6 +524,21 @@ const addTaskHandler = async (req, resp) => {
   }
 };
 
+const deleteTaskHandler = async (req, resp) => {
+  try {
+    const { id } = req.params;
+
+    await taskModel.findByIdAndDelete(id);
+
+    return resp.json({
+      message: "task deleted successfuly",
+      success: true,
+    });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
 const updateTaskHandler = async (req, res) => {
   let {
     _id,
@@ -568,6 +584,105 @@ const updateTaskHandler = async (req, res) => {
   }
 };
 
+// interaction
+
+const newInteractionHandler = async (req, resp) => {
+  try {
+    let users = await userModel.find().select("_id name");
+    let customers = await customerModel.find().select("_id name code");
+
+    return resp.json({ users, customers });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const addInteractionHandler = async (req, resp) => {
+  try {
+    let { customer, details, date, type, assignedTo, status } = req.body;
+
+    const newInteraction = await interactionModel.create({
+      customer,
+      details,
+      date,
+      type,
+      assignedTo,
+      status,
+    });
+
+    await newInteraction.save();
+
+    return resp.json({
+      message: "Interaction added successfuly",
+      success: true,
+    });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const interactionHandler = async (req, resp) => {
+  try {
+    let interactions = await interactionModel
+      .find()
+      .populate("assignedTo", "_id name")
+      .populate("customer", "_id code name company");
+
+    return resp.json({ interactions });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const deleteInteractionHandler = async (req, resp) => {
+  try {
+    const { id } = req.params;
+
+    await interactionModel.findByIdAndDelete(id);
+
+    return resp.json({
+      message: "interaction deleted successfuly",
+      success: true,
+    });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const updateInteractionHandler = async (req, res) => {
+  let { _id, customer, details, date, type, assignedTo, status } = req.body;
+
+  try {
+    if (!_id) {
+      return res.json({ message: "Missing required fields", success: false });
+    }
+
+    const existingInteraction = await interactionModel.findById(_id);
+
+    if (!existingInteraction) {
+      return res.json({ message: "interaction not found", success: false });
+    }
+
+    existingInteraction.customer = customer;
+    existingInteraction.details = details;
+    existingInteraction.date = date;
+    existingInteraction.type = type;
+    existingInteraction.assignedTo = assignedTo;
+    existingInteraction.status = status;
+   
+
+    await existingInteraction.save();
+
+    return res.json({
+      message: "Interaction updated successfully!",
+      success: true,
+    });
+  } catch (error) {
+    console.log(error.message);
+    return res.json({ message: "Internal server error", success: false });
+  }
+};
+
 module.exports = {
   usersHandler,
   deleteUserHandler,
@@ -595,5 +710,12 @@ module.exports = {
   newTaskHandler,
   taskHandler,
   addTaskHandler,
-  updateTaskHandler
+  deleteTaskHandler,
+  updateTaskHandler,
+
+  newInteractionHandler,
+  addInteractionHandler,
+  interactionHandler,
+  updateInteractionHandler,
+  deleteInteractionHandler,
 };

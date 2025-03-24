@@ -42,7 +42,7 @@ const customersHandler = async (req, resp) => {
 };
 
 const updateCustomersHandler = async (req, res) => {
-  const { _id, name, phone, email, address } = req.body;
+  const { _id, name, phone, email, address, company } = req.body;
 
   try {
     if (!_id || !name || !phone || !email || !address) {
@@ -59,6 +59,7 @@ const updateCustomersHandler = async (req, res) => {
     customertoUpdate.email = email;
     customertoUpdate.phone = phone;
     customertoUpdate.address = address;
+    customertoUpdate.company = company;
 
     await customertoUpdate.save();
 

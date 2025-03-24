@@ -76,7 +76,7 @@ server.use(express.static("public"));
 
 server.use(
   cors({
-    origin: ["https://crm-frontend-project.vercel.app"],
+    origin: [LOCAL_URL, VERCEL_URL],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
     // allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
@@ -96,7 +96,7 @@ server.use(cookieParser());
 server.use(bodyParser.urlencoded({ extended: true }));
 
 const { SECRETKEY } = require("./utilits/const");
-const { usersHandler, deleteUserHandler, updateUserHandler, newLeadHandler, leadHandler, addLeadHandler, deleteLeadHandler, convertLeadHandler, newDealHandler, addDealHandler, dealHandler, updateDealHandler, updateLeadHandler, newProjectHandler, projectHandler, addProjectHandler, deleteProjectHandler, deleteDealHandler, updateProjectHandler, newTaskHandler, taskHandler, addTaskHandler, updateTaskHandler } = require("./handler/crmHandler");
+const { usersHandler, deleteUserHandler, updateUserHandler, newLeadHandler, leadHandler, addLeadHandler, deleteLeadHandler, convertLeadHandler, newDealHandler, addDealHandler, dealHandler, updateDealHandler, updateLeadHandler, newProjectHandler, projectHandler, addProjectHandler, deleteProjectHandler, deleteDealHandler, updateProjectHandler, newTaskHandler, taskHandler, addTaskHandler, updateTaskHandler, deleteTaskHandler, newInteractionHandler, interactionHandler, addInteractionHandler, deleteInteractionHandler, updateInteractionHandler } = require("./handler/crmHandler");
 
 // middleware
 
@@ -130,7 +130,7 @@ server.get("/signout", authMiddleware, signoutHandler);
 
 // warehouse
 
-server.get("/warehouses", authMiddleware, warehousesHandler);
+server.get("/warehouse", authMiddleware, warehousesHandler);
 
 server.post("/warehouse/add", authMiddleware, addWarehouseHandler);
 
@@ -154,15 +154,15 @@ server.get("/products", authMiddleware, productsHandler);
 
 server.get("/newproduct", authMiddleware, newProductHandler);
 
-server.post("/product/add", authMiddleware, addProductHandler);
+server.post("/products/add", authMiddleware, addProductHandler);
 
-server.delete("/product/:id", authMiddleware, deleteProductHandler);
+server.delete("/products/:id", authMiddleware, deleteProductHandler);
 
-server.put("/product", authMiddleware, updateProductHandler);
+server.put("/products", authMiddleware, updateProductHandler);
 
 // supplier
 
-server.get("/suppliers", authMiddleware, suppliersHandler);
+server.get("/supplier", authMiddleware, suppliersHandler);
 
 server.post("/supplier/add", authMiddleware, addSupplierHandler);
 
@@ -190,7 +190,7 @@ server.get("/purchases/completed", authMiddleware, completedPurchasesHandler);
 
 server.post("/customer/add", authMiddleware, addCustomerHandler);
 
-server.get("/customers", authMiddleware, customersHandler);
+server.get("/customer", authMiddleware, customersHandler);
 
 server.put("/customer", authMiddleware, updateCustomersHandler);
 
@@ -226,7 +226,7 @@ server.put("/transaction", authMiddleware, updateTransactionHandler);
 
 // user
 
-server.get("/users", authMiddleware, usersHandler);
+server.get("/user", authMiddleware, usersHandler);
 
 server.delete("/user/:id", authMiddleware, deleteUserHandler);
 
@@ -251,7 +251,7 @@ server.put("/lead", authMiddleware, updateLeadHandler);
 
 server.get("/newdeal", authMiddleware, newDealHandler);
 
-server.get("/deals", authMiddleware, dealHandler);
+server.get("/deal", authMiddleware, dealHandler);
 
 server.post("/deal", authMiddleware, addDealHandler);
 
@@ -264,7 +264,7 @@ server.delete("/deal/:id", authMiddleware, deleteDealHandler);
 
 server.get("/newproject", authMiddleware, newProjectHandler);
 
-server.get("/projects", authMiddleware, projectHandler);
+server.get("/project", authMiddleware, projectHandler);
 
 server.post("/project", authMiddleware, addProjectHandler);
 
@@ -276,11 +276,25 @@ server.put("/project", authMiddleware, updateProjectHandler);
 
 server.get("/newtask", authMiddleware, newTaskHandler);
 
-server.get("/tasks", authMiddleware, taskHandler);
+server.get("/task", authMiddleware, taskHandler);
 
 server.post("/task", authMiddleware, addTaskHandler);
+
+server.delete("/task/:id", authMiddleware, deleteTaskHandler);
  
 server.put("/task", authMiddleware, updateTaskHandler);
+
+// interaction
+
+server.get("/newinteraction", authMiddleware, newInteractionHandler);
+
+server.get("/interactions", authMiddleware, interactionHandler);
+
+server.post("/interaction", authMiddleware, addInteractionHandler);
+
+server.delete("/interaction/:id", authMiddleware, deleteInteractionHandler);
+
+server.put("/interaction", authMiddleware, updateInteractionHandler);
 
 
 server.get("/server", async (req, resp) => {

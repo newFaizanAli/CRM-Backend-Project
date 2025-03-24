@@ -298,7 +298,7 @@ const taskSchema = new mongoose.Schema({
   priority: {
     type: String,
     enum: ["low", "medium", "high", "critical"],
-    default: "medium",
+    default: "medium", 
   },
   followUps: [
     {
@@ -331,14 +331,20 @@ const taskSchema = new mongoose.Schema({
 
 // Interaction Schema (Calls, Emails, Meetings)
 
-// const interactionSchema = new mongoose.Schema({
-//   customer: { type: mongoose.Schema.Types.ObjectId, ref: "Customer" },
-//   type: { type: String, enum: ["Call", "Email", "Meeting"] },
-//   details: String,
-//   date: { type: Date, default: Date.now },
-//   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-// });
+const interactionSchema = new mongoose.Schema({
+  customer: { type: mongoose.Schema.Types.ObjectId, ref: "customer" },
+  type: { type: String, enum: ["call", "email", "meeting"] },
+  details: String,
+  date: { type: Date, default: Date.now },
+  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "users" },
+  status: {
+    type: String,
+    enum: ["pending", "completed"],
+    default: "pending",
+  },
+});
 
+// 
 module.exports = {
   userModel: mongoose.model("users", userSchema),
   categoryModel: mongoose.model("category", categorySchema),
@@ -354,5 +360,6 @@ module.exports = {
   dealModel: mongoose.model("deal", dealSchema),
   projectModel: mongoose.model("project", projectSchema),
   taskModel: mongoose.model("task", taskSchema),
+  interactionModel: mongoose.model("interaction", interactionSchema),
   
 };
