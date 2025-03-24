@@ -7,6 +7,8 @@ const {
   signinHandler,
   checkAuthHandler,
   signoutHandler,
+  userProfile,
+  resetPassword,
 } = require("./handler/authenticationHandler");
 
 const {
@@ -228,9 +230,14 @@ server.put("/transaction", authMiddleware, updateTransactionHandler);
 
 server.get("/user", authMiddleware, usersHandler);
 
+server.get("/userprofile", authMiddleware, userProfile);
+
 server.delete("/user/:id", authMiddleware, deleteUserHandler);
 
 server.put("/user", authMiddleware, updateUserHandler);
+
+server.post("/password/reset", authMiddleware, resetPassword);
+
 
 // leads
 

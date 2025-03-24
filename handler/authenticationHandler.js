@@ -26,6 +26,47 @@ const checkAuthHandler = async (req, res) => {
   }
 };
 
+const userProfile = async (req, resp) => {
+  try {
+    const id = req.user.userid;
+
+    let user = await userModel.findById(id, "name email status usertype");
+
+    return resp.json({ user });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const resetPassword = async (req, resp) => {
+  try {
+    let {  password } = req.body;
+    const id = req.user.userid;
+
+    const salt = await bcrypt.genSalt(10);
+    const hashpass = await bcrypt.hash(password, salt);
+
+
+    const user = await userModel.findByIdAndUpdate(
+      id,
+      { password: hashpass },
+      { new: true } 
+    );
+
+    if (!user) {
+      return resp.json({ message: "User not found" });
+    }
+
+
+    await user.save();
+
+    return resp.json({ message: "Password reset successfully", success: true });
+
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
 const signinHandler = async (req, resp) => {
   try {
     const { email, password } = req.body;
@@ -130,8 +171,10 @@ const signoutHandler = (req, resp) => {
 };
 
 module.exports = {
+  userProfile,
   signupHandler,
   signinHandler,
   signoutHandler,
   checkAuthHandler,
+  resetPassword
 };

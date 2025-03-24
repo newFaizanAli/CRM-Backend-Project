@@ -57,7 +57,7 @@ const updateUserHandler = async (req, res) => {
     await existingUser.save();
 
     return res.json({
-      message: "User updated successfully!",
+      message: "Profile updated successfully!",
       success: true,
     });
   } catch (error) {
