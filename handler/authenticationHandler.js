@@ -20,7 +20,7 @@ const checkAuthHandler = async (req, res) => {
       });
     }
 
-    // return res.json({ token: true, usertype: req.user.usertype });
+    return res.json({ token: true, usertype: req.user.usertype });
   } catch (e) {
     console.log(e.message);
   }
