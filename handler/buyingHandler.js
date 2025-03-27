@@ -106,7 +106,7 @@ const purchasesHandler = async (req, resp) => {
 
 const addPurchaseHandler = async (req, res) => {
   try {
-    const { supplierId, items, totalAmount } = req.body;
+    const { supplierId, items, totalAmount, createdAt } = req.body;
 
     if (!supplierId || !items || items.length < 1) {
       return res.json({ message: "Supplier and items are required", success: false });
@@ -141,6 +141,7 @@ const addPurchaseHandler = async (req, res) => {
       supplierId,
       items,
       totalAmount,
+      createdAt
     });
 
     await newPurchase.save();
@@ -166,7 +167,7 @@ const deletePurchaseHandler = async (req, resp) => {
 };
 
 const updatePurchaseHandler = async (req, res) => {
-  const { _id, supplierId, items, totalAmount } = req.body;
+  const { _id, supplierId, items, totalAmount, createdAt } = req.body;
 
   try {
     if (!_id || !supplierId || !items || !totalAmount) {
@@ -182,6 +183,8 @@ const updatePurchaseHandler = async (req, res) => {
     existingPurchase.totalAmount = totalAmount;
     existingPurchase.supplierId = supplierId;
     existingPurchase.items = items;
+    existingPurchase.createdAt = createdAt;
+    existingPurchase.received = recieved;
 
     await existingPurchase.save();
 

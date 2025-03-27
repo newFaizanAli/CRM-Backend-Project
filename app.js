@@ -60,6 +60,7 @@ const {
   transactionHandler,
   deleteTransactionHandler,
   updateTransactionHandler,
+  billHandler,
 } = require("./handler/transactionHandler");
 
 const cookieParser = require("cookie-parser");
@@ -99,6 +100,7 @@ server.use(bodyParser.urlencoded({ extended: true }));
 
 const { SECRETKEY } = require("./utilits/const");
 const { usersHandler, deleteUserHandler, updateUserHandler, newLeadHandler, leadHandler, addLeadHandler, deleteLeadHandler, convertLeadHandler, newDealHandler, addDealHandler, dealHandler, updateDealHandler, updateLeadHandler, newProjectHandler, projectHandler, addProjectHandler, deleteProjectHandler, deleteDealHandler, updateProjectHandler, newTaskHandler, taskHandler, addTaskHandler, updateTaskHandler, deleteTaskHandler, newInteractionHandler, interactionHandler, addInteractionHandler, deleteInteractionHandler, updateInteractionHandler } = require("./handler/crmHandler");
+const { stockDashboard, buyingDashboard, buyingMonthlyPurchase } = require("./handler/dashboardHandler");
 
 // middleware
 
@@ -216,7 +218,10 @@ server.post("/sale/confirm/:id", authMiddleware, confirmSaleHandler);
 
 server.get("/newtransaction", authMiddleware, newTransactionHandler);
 
-server.get("/transactions", authMiddleware, transactionHandler);
+server.get("/transaction", authMiddleware, transactionHandler);
+
+server.get("/billamount/:code", authMiddleware, billHandler);
+
 
 server.post("/transaction/:id", authMiddleware, addTransactionHandler);
 
@@ -243,7 +248,7 @@ server.post("/password/reset", authMiddleware, resetPassword);
 
 server.get("/newleads", authMiddleware, newLeadHandler);
 
-server.get("/leads", authMiddleware, leadHandler);
+server.get("/lead", authMiddleware, leadHandler);
 
 server.post("/lead", authMiddleware, addLeadHandler);
 
@@ -295,13 +300,27 @@ server.put("/task", authMiddleware, updateTaskHandler);
 
 server.get("/newinteraction", authMiddleware, newInteractionHandler);
 
-server.get("/interactions", authMiddleware, interactionHandler);
+server.get("/interaction", authMiddleware, interactionHandler);
 
 server.post("/interaction", authMiddleware, addInteractionHandler);
 
 server.delete("/interaction/:id", authMiddleware, deleteInteractionHandler);
 
 server.put("/interaction", authMiddleware, updateInteractionHandler);
+
+
+// dashboard
+
+// stock
+
+server.get("/erp/stock/dashboard", authMiddleware, stockDashboard);
+
+
+// buying
+
+server.get("/erp/buying/dashboard", authMiddleware, buyingDashboard);
+
+server.get("/erp/buying/dashboard/purchase/:year?", authMiddleware, buyingMonthlyPurchase);
 
 
 server.get("/server", async (req, resp) => {

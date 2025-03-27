@@ -1,6 +1,12 @@
 // transaction
 
-const { supplierModel, customerModel, transactionModel } = require("../models");
+const {
+  supplierModel,
+  customerModel,
+  transactionModel,
+  purchaseModel,
+  saleModel,
+} = require("../models");
 const { codeCreator } = require("../utilits/function");
 
 const newTransactionHandler = async (req, resp) => {
@@ -21,6 +27,47 @@ const transactionHandler = async (req, resp) => {
     return resp.json({ transactions });
   } catch (e) {
     console.log(e.message);
+  }
+};
+
+const billHandler = async (req, resp) => {
+  try {
+    const { code } = req.params;
+    if (!code)
+      return resp
+        .status(400)
+        .json({ message: "Code is required", success: false });
+
+    let totalAmount = 0;
+
+    if (code.includes("PO")) {
+      const purchase = await purchaseModel
+        .findOne({ code })
+        .select("totalAmount");
+
+      if (!purchase) {
+        return resp.json({ message: "Purchase not found", success: false });
+      }
+
+      totalAmount = purchase.totalAmount;
+      return resp.json({ totalAmount, success: true });
+    }
+
+    if (code.includes("SL")) {
+      const sale = await saleModel.findOne({ code }).select("totalAmount");
+
+      if (!sale) {
+        return resp.json({ message: "Sale not found", success: false });
+      }
+
+      totalAmount = sale.totalAmount;
+      return resp.json({ totalAmount });
+    }
+
+    return resp.json({ message: "Invalid code", success: false });
+  } catch (e) {
+    console.log(e.message);
+    return resp.json({ message: "Internal server error", success: false });
   }
 };
 
@@ -60,7 +107,6 @@ const addTransactionHandler = async (req, resp) => {
   }
 };
 
-
 const deleteTransactionHandler = async (req, resp) => {
   try {
     const { id } = req.params;
@@ -75,9 +121,8 @@ const deleteTransactionHandler = async (req, resp) => {
   }
 };
 
-
 const updateTransactionHandler = async (req, res) => {
-  const { 
+  const {
     _id,
     transactionType,
     paymentType,
@@ -86,14 +131,14 @@ const updateTransactionHandler = async (req, res) => {
     entityId,
     status,
     createdAt,
-   } = req.body;
+    billId,
+  } = req.body;
 
   try {
- 
-
-    if (!_id ||
+    if (
+      !_id ||
       !transactionType ||
-      !paymentType || 
+      !paymentType ||
       !amount ||
       !relatedEntity ||
       !entityId ||
@@ -106,7 +151,37 @@ const updateTransactionHandler = async (req, res) => {
     const existingTransaction = await transactionModel.findById(_id);
 
     if (!existingTransaction) {
-      return res.json({ message: "warehouse not found", success: false });
+      return res.json({ message: "transaction not found", success: false });
+    }
+
+    // save purchase
+
+    if (status === "paid" && billId?.includes("PO")) {
+      const purchase = await purchaseModel.findOne({ code: billId });
+
+      if (!purchase) {
+        return res.json({ message: "Purchase not found", success: false });
+      }
+
+      
+      if (purchase.billed) {
+        return res.json({
+          message: "This bill is already marked as paid.",
+          success: false,
+        });
+      }
+
+  
+      if (amount > purchase.totalAmount) {
+        return res.json({
+          message: "Paid amount cannot exceed total bill amount.",
+          success: false,
+        });
+      }
+
+
+      purchase.billed = true;
+      await purchase.save();
     }
 
     existingTransaction.transactionType = transactionType;
@@ -129,11 +204,11 @@ const updateTransactionHandler = async (req, res) => {
   }
 };
 
-
 module.exports = {
   newTransactionHandler,
   transactionHandler,
   addTransactionHandler,
   deleteTransactionHandler,
-  updateTransactionHandler
+  updateTransactionHandler,
+  billHandler,
 };
