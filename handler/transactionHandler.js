@@ -1,13 +1,15 @@
-// transaction
-
 const {
   supplierModel,
   customerModel,
   transactionModel,
   purchaseModel,
   saleModel,
+  payableModel,
 } = require("../models");
 const { codeCreator } = require("../utilits/function");
+const { codeMiddleNames } = require("../utilits/const");
+
+// transaction
 
 const newTransactionHandler = async (req, resp) => {
   try {
@@ -27,47 +29,6 @@ const transactionHandler = async (req, resp) => {
     return resp.json({ transactions });
   } catch (e) {
     console.log(e.message);
-  }
-};
-
-const billHandler = async (req, resp) => {
-  try {
-    const { code } = req.params;
-    if (!code)
-      return resp
-        .status(400)
-        .json({ message: "Code is required", success: false });
-
-    let totalAmount = 0;
-
-    if (code.includes("PO")) {
-      const purchase = await purchaseModel
-        .findOne({ code })
-        .select("totalAmount");
-
-      if (!purchase) {
-        return resp.json({ message: "Purchase not found", success: false });
-      }
-
-      totalAmount = purchase.totalAmount;
-      return resp.json({ totalAmount, success: true });
-    }
-
-    if (code.includes("SL")) {
-      const sale = await saleModel.findOne({ code }).select("totalAmount");
-
-      if (!sale) {
-        return resp.json({ message: "Sale not found", success: false });
-      }
-
-      totalAmount = sale.totalAmount;
-      return resp.json({ totalAmount });
-    }
-
-    return resp.json({ message: "Invalid code", success: false });
-  } catch (e) {
-    console.log(e.message);
-    return resp.json({ message: "Internal server error", success: false });
   }
 };
 
@@ -154,36 +115,6 @@ const updateTransactionHandler = async (req, res) => {
       return res.json({ message: "transaction not found", success: false });
     }
 
-    // save purchase
-
-    if (status === "paid" && billId?.includes("PO")) {
-      const purchase = await purchaseModel.findOne({ code: billId });
-
-      if (!purchase) {
-        return res.json({ message: "Purchase not found", success: false });
-      }
-
-      
-      if (purchase.billed) {
-        return res.json({
-          message: "This bill is already marked as paid.",
-          success: false,
-        });
-      }
-
-  
-      if (amount > purchase.totalAmount) {
-        return res.json({
-          message: "Paid amount cannot exceed total bill amount.",
-          success: false,
-        });
-      }
-
-
-      purchase.billed = true;
-      await purchase.save();
-    }
-
     existingTransaction.transactionType = transactionType;
     existingTransaction.paymentType = paymentType;
     existingTransaction.amount = amount;
@@ -204,11 +135,75 @@ const updateTransactionHandler = async (req, res) => {
   }
 };
 
+// payable
+
+const addPayablePurchaseHandler = async (req, resp) => {
+  try {
+    let { status, paid, method, paymentDate, purchase, tax, discount } =
+      req.body;
+
+    const code = await codeCreator({
+      model: payableModel,
+      codeStr: codeMiddleNames["payable"],
+    });
+
+    // update purchase status isPaid
+
+    const selectedPurchase = await purchaseModel.findById(purchase);
+    selectedPurchase.isPaid = status;
+    await selectedPurchase.save();
+
+    // add new payable
+
+    const newPayable = await payableModel.create({
+      code,
+      status,
+      paid,
+      method,
+      paymentDate,
+      purchase,
+      tax,
+      discount,
+    });
+
+    await newPayable.save();
+
+    return resp.json({
+      message: "Payable added successfuly",
+      success: true,
+    });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const singlePurchaseInvoice = async (req, resp) => {
+  try {
+    const { invoice } = req.params;
+
+    const selectedPurchase = await payableModel.findOne({ purchase: invoice });
+
+    if (selectedPurchase) {
+      resp.json({ success: true, data: selectedPurchase });
+    }
+
+   
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+// purchase
+
 module.exports = {
   newTransactionHandler,
   transactionHandler,
   addTransactionHandler,
   deleteTransactionHandler,
   updateTransactionHandler,
-  billHandler,
+
+  // payable
+
+  addPayablePurchaseHandler,
+  singlePurchaseInvoice,
 };

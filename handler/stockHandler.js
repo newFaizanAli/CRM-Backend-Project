@@ -1,5 +1,6 @@
 const { warehouseModel, categoryModel, stockModel } = require("../models");
 const { codeCreator } = require("../utilits/function");
+const { codeMiddleNames } = require("../utilits/const");
 
 const addWarehouseHandler = async (req, resp) => {
   try {
@@ -95,7 +96,8 @@ const addCategoryHandler = async (req, resp) => {
       return resp.json({ message: "Category already exists", success: false });
     }
 
-    const c_code = await codeCreator({ model: categoryModel, codeStr: "C" });
+    const c_code = await codeCreator({ model: categoryModel, codeStr: codeMiddleNames['category'] });
+
 
     const newCategory = await categoryModel.create({
       code: c_code,
@@ -199,7 +201,7 @@ const addProductHandler = async (req, resp) => {
       return resp.json({ message: "Product already exists", success: false });
     }
 
-    const c_code = await codeCreator({ model: stockModel, codeStr: "P" });
+    const c_code = await codeCreator({ model: stockModel, codeStr: codeMiddleNames['product'] });
 
     const newProduct = await stockModel.create({
       code: c_code,

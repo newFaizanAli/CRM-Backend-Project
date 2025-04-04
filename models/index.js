@@ -124,7 +124,7 @@ const purchaseOrderSchema = new mongoose.Schema({
   ],
   totalAmount: Number,
   status: { type: String, enum: ["Pending", "Completed"], default: "Pending" },
-  billed: { type: Boolean, defualt : false },
+  isPaid: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 
@@ -180,9 +180,26 @@ const transactionSchema = new mongoose.Schema({
 
   status: { type: String, enum: ["pending", "paid"], default: "pending" },
   paymentType: { type: String },
-  billId: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
+
+const payableSchema = new mongoose.Schema({
+  code: { type: String },
+  method: { type: String },
+  purchase: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "purchase",
+    required: true,
+  },
+  paid: Number,
+  tax: Number,
+  discount: Number,
+  status: { type: String },
+  paymentDate: { type: Date, default: Date.now },
+});
+
+
+
 
 // CRM
 
@@ -364,4 +381,5 @@ module.exports = {
   taskModel: mongoose.model("task", taskSchema),
   interactionModel: mongoose.model("interaction", interactionSchema),
   
+  payableModel: mongoose.model("payble", payableSchema), 
 };

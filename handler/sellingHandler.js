@@ -1,5 +1,7 @@
 const { customerModel, saleModel, stockModel } = require("../models");
 const { codeCreator } = require("../utilits/function");
+const { codeMiddleNames } = require("../utilits/const");
+
 
 const addCustomerHandler = async (req, resp) => {
   try {
@@ -13,7 +15,7 @@ const addCustomerHandler = async (req, resp) => {
       });
     }
 
-    const c_code = await codeCreator({ model: customerModel, codeStr: "CS" });
+    const c_code = await codeCreator({ model: customerModel, codeStr: codeMiddleNames['customer'] });
 
     const newCustomer = await customerModel.create({
       code: c_code,
@@ -148,7 +150,7 @@ const addSellingHandler = async (req, res) => {
       });
     }
 
-    const code = await codeCreator({ model: saleModel, codeStr: "SL" });
+    const code = await codeCreator({ model: saleModel, codeStr: codeMiddleNames['sales'] });
 
     const newSale = new saleModel({
       code: code,

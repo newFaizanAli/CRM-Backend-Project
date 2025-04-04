@@ -1,11 +1,13 @@
 const { supplierModel, stockModel, purchaseModel } = require("../models");
 const { codeCreator } = require("../utilits/function");
+const { codeMiddleNames } = require("../utilits/const");
+
 
 const addSupplierHandler = async (req, resp) => {
   try {
     let { name, phone, email, address } = req.body;
 
-    const c_code = await codeCreator({ model: supplierModel, codeStr: "SP" });
+    const c_code = await codeCreator({ model: supplierModel, codeStr: codeMiddleNames['supplier'] });
 
     const newSupplier = await supplierModel.create({
       code: c_code,
@@ -104,6 +106,20 @@ const purchasesHandler = async (req, resp) => {
   }
 };
 
+const singlePurchaseHandler = async (req, resp) => {
+  try {
+    const {id} = req.params
+
+    const purchase = await purchaseModel.findById(id).populate("supplierId", "name code").populate("items.productId", "_id productName")
+
+
+
+    return resp.json({ purchase });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
 const addPurchaseHandler = async (req, res) => {
   try {
     const { supplierId, items, totalAmount, createdAt } = req.body;
@@ -134,7 +150,7 @@ const addPurchaseHandler = async (req, res) => {
       });
     }
 
-    const code = await codeCreator({ model: purchaseModel, codeStr: "PO" });
+    const code = await codeCreator({ model: purchaseModel, codeStr: codeMiddleNames['purchase'] });
 
     const newPurchase = new purchaseModel({
       code: code,
@@ -145,7 +161,7 @@ const addPurchaseHandler = async (req, res) => {
     });
 
     await newPurchase.save();
-    res.json({ message: "Purchase order created successfully" });
+    res.json({ message: "Purchase order created successfully", success: true });
   } catch (error) {
     console.error("Error creating purchase order:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -184,7 +200,7 @@ const updatePurchaseHandler = async (req, res) => {
     existingPurchase.supplierId = supplierId;
     existingPurchase.items = items;
     existingPurchase.createdAt = createdAt;
-    existingPurchase.received = recieved;
+
 
     await existingPurchase.save();
 
@@ -202,6 +218,7 @@ const confirmPurchaseHandler = async (req, res) => {
   const { id } = req.params;
 
   try {
+
    
     const existingPurchase = await purchaseModel.findById(id).populate("items.productId");
 
@@ -215,9 +232,10 @@ const confirmPurchaseHandler = async (req, res) => {
     }
 
    
+
     for (const item of existingPurchase.items) {
       await stockModel.findByIdAndUpdate(
-        item.productId._id,
+        item.productId, 
         { $inc: { quantity: item.quantity } },
         { new: true }
       );
@@ -237,9 +255,10 @@ const confirmPurchaseHandler = async (req, res) => {
   }
 };
 
-const completedPurchasesHandler = async (req, resp) => {
+const confirmedPurchasesHandler = async (req, resp) => {
   try {
-    let purchases = await purchaseModel
+   
+    const purchases = await purchaseModel
       .find({ status: "Completed" })
       .populate("supplierId", "_id name code")
       .populate("items.productId", "_id productName");
@@ -248,7 +267,8 @@ const completedPurchasesHandler = async (req, resp) => {
   } catch (e) {
     console.log(e.message);
   }
-};
+}; 
+
 
 module.exports = {
   addSupplierHandler,
@@ -257,10 +277,12 @@ module.exports = {
   updateSupplierHandler,
 
   newPurchaseHandler,
+  singlePurchaseHandler,
   purchasesHandler,
   addPurchaseHandler,
   deletePurchaseHandler,
   updatePurchaseHandler,
   confirmPurchaseHandler,
-  completedPurchasesHandler
+  confirmedPurchasesHandler,
+  
 };

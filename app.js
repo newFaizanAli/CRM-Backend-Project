@@ -38,7 +38,8 @@ const {
   deletePurchaseHandler,
   updatePurchaseHandler,
   confirmPurchaseHandler,
-  completedPurchasesHandler,
+  confirmedPurchasesHandler,
+  singlePurchaseHandler,
 } = require("./handler/buyingHandler");
 
 const {
@@ -60,7 +61,8 @@ const {
   transactionHandler,
   deleteTransactionHandler,
   updateTransactionHandler,
-  billHandler,
+  addPayablePurchaseHandler,
+  singlePurchaseInvoice,
 } = require("./handler/transactionHandler");
 
 const cookieParser = require("cookie-parser");
@@ -164,6 +166,8 @@ server.delete("/products/:id", authMiddleware, deleteProductHandler);
 
 server.put("/products", authMiddleware, updateProductHandler);
 
+
+
 // supplier
 
 server.get("/supplier", authMiddleware, suppliersHandler);
@@ -176,9 +180,13 @@ server.put("/supplier", authMiddleware, updateSupplierHandler);
 
 // purchase
 
+server.get("/purchase/confirmed", authMiddleware, confirmedPurchasesHandler);
+
 server.get("/newpurchase", authMiddleware, newPurchaseHandler);
 
-server.get("/purchases", authMiddleware, purchasesHandler);
+server.get("/purchase", authMiddleware, purchasesHandler);
+
+server.get("/purchase/:id", authMiddleware, singlePurchaseHandler);
 
 server.post("/purchase/add", authMiddleware, addPurchaseHandler);
 
@@ -188,9 +196,8 @@ server.put("/purchase", authMiddleware, updatePurchaseHandler);
 
 server.post("/purchase/confirm/:id", authMiddleware, confirmPurchaseHandler);
 
-server.get("/purchases/completed", authMiddleware, completedPurchasesHandler);
 
-// customer
+// customer 
 
 server.post("/customer/add", authMiddleware, addCustomerHandler);
 
@@ -220,14 +227,20 @@ server.get("/newtransaction", authMiddleware, newTransactionHandler);
 
 server.get("/transaction", authMiddleware, transactionHandler);
 
-server.get("/billamount/:code", authMiddleware, billHandler);
-
-
 server.post("/transaction/:id", authMiddleware, addTransactionHandler);
 
 server.delete("/transaction/:id", authMiddleware, deleteTransactionHandler);
 
 server.put("/transaction", authMiddleware, updateTransactionHandler);
+
+// payable
+
+server.post("/payable/purchase", authMiddleware, addPayablePurchaseHandler);
+
+server.get("/payable/purchase", authMiddleware, addPayablePurchaseHandler);
+
+
+
 
 // CRM
 
@@ -308,6 +321,14 @@ server.delete("/interaction/:id", authMiddleware, deleteInteractionHandler);
 
 server.put("/interaction", authMiddleware, updateInteractionHandler);
 
+// payable
+
+server.post("/payablepurchase", authMiddleware, addInteractionHandler);
+
+server.get("/payablepurchase/:invoice?", authMiddleware, singlePurchaseInvoice);
+
+
+
 
 // dashboard
 
@@ -321,6 +342,7 @@ server.get("/erp/stock/dashboard", authMiddleware, stockDashboard);
 server.get("/erp/buying/dashboard", authMiddleware, buyingDashboard);
 
 server.get("/erp/buying/dashboard/purchase/:year?", authMiddleware, buyingMonthlyPurchase);
+
 
 
 server.get("/server", async (req, resp) => {
