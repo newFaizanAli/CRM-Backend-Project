@@ -1,6 +1,5 @@
 const express = require("express");
 const server = express();
-const mongoose = require("mongoose");
 
 const {
   signupHandler,
@@ -63,6 +62,9 @@ const {
   updateTransactionHandler,
   addPayablePurchaseHandler,
   singlePurchaseInvoice,
+  payableHandler,
+  updatePayablePurchaseHandler,
+  deletePayablePurchaseHandler,
 } = require("./handler/transactionHandler");
 
 const cookieParser = require("cookie-parser");
@@ -102,7 +104,7 @@ server.use(bodyParser.urlencoded({ extended: true }));
 
 const { SECRETKEY } = require("./utilits/const");
 const { usersHandler, deleteUserHandler, updateUserHandler, newLeadHandler, leadHandler, addLeadHandler, deleteLeadHandler, convertLeadHandler, newDealHandler, addDealHandler, dealHandler, updateDealHandler, updateLeadHandler, newProjectHandler, projectHandler, addProjectHandler, deleteProjectHandler, deleteDealHandler, updateProjectHandler, newTaskHandler, taskHandler, addTaskHandler, updateTaskHandler, deleteTaskHandler, newInteractionHandler, interactionHandler, addInteractionHandler, deleteInteractionHandler, updateInteractionHandler } = require("./handler/crmHandler");
-const { stockDashboard, buyingDashboard, buyingMonthlyPurchase } = require("./handler/dashboardHandler");
+const { stockDashboard, buyingDashboard, buyingMonthlyPurchase, buyingPurchaseAmount, buyingTopSupplier } = require("./handler/dashboardHandler");
 
 // middleware
 
@@ -233,12 +235,6 @@ server.delete("/transaction/:id", authMiddleware, deleteTransactionHandler);
 
 server.put("/transaction", authMiddleware, updateTransactionHandler);
 
-// payable
-
-server.post("/payable/purchase", authMiddleware, addPayablePurchaseHandler);
-
-server.get("/payable/purchase", authMiddleware, addPayablePurchaseHandler);
-
 
 
 
@@ -323,11 +319,16 @@ server.put("/interaction", authMiddleware, updateInteractionHandler);
 
 // payable
 
-server.post("/payablepurchase", authMiddleware, addInteractionHandler);
 
-server.get("/payablepurchase/:invoice?", authMiddleware, singlePurchaseInvoice);
+server.get("/payable/purchase/:invoice", authMiddleware, singlePurchaseInvoice);
 
+server.post("/payable/purchase", authMiddleware, addPayablePurchaseHandler);
 
+server.get("/payable/purchase", authMiddleware, payableHandler);
+
+server.put("/payable/purchase", authMiddleware, updatePayablePurchaseHandler);
+
+server.delete("/payable/purchase/:id", authMiddleware, deletePayablePurchaseHandler);
 
 
 // dashboard
@@ -339,9 +340,13 @@ server.get("/erp/stock/dashboard", authMiddleware, stockDashboard);
 
 // buying
 
+server.get("/erp/buying/dashboard/purchase/amount/:supplier?/:startDate?/:endDate?/:status?", authMiddleware, buyingPurchaseAmount);
+
+server.get("/erp/buying/dashboard/purchase/supplier/:supplier?/:startDate?/:endDate?", authMiddleware, buyingTopSupplier);
+
 server.get("/erp/buying/dashboard", authMiddleware, buyingDashboard);
 
-server.get("/erp/buying/dashboard/purchase/:year?", authMiddleware, buyingMonthlyPurchase);
+server.get("/erp/buying/dashboard/purchase/:supplier?/:startDate?/:endDate?", authMiddleware, buyingMonthlyPurchase);
 
 
 

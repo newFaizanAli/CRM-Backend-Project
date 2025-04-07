@@ -126,6 +126,7 @@ const purchaseOrderSchema = new mongoose.Schema({
   status: { type: String, enum: ["Pending", "Completed"], default: "Pending" },
   isPaid: { type: String },
   createdAt: { type: Date, default: Date.now },
+  date: { type: Date, default: Date.now }
 });
 
 const customerSchema = new mongoose.Schema({

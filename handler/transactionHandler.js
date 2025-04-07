@@ -3,7 +3,6 @@ const {
   customerModel,
   transactionModel,
   purchaseModel,
-  saleModel,
   payableModel,
 } = require("../models");
 const { codeCreator } = require("../utilits/function");
@@ -181,13 +180,80 @@ const singlePurchaseInvoice = async (req, resp) => {
   try {
     const { invoice } = req.params;
 
+   
+
     const selectedPurchase = await payableModel.findOne({ purchase: invoice });
 
     if (selectedPurchase) {
       resp.json({ success: true, data: selectedPurchase });
+    } 
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const payableHandler = async (req, resp) => {
+  try {
+    let payables = await payableModel
+      .find({})
+      .populate("purchase", "code totalAmount status");
+
+    return resp.json({ payables });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const updatePayablePurchaseHandler = async (req, resp) => {
+  try {
+    let { id, status, paid, method, paymentDate, purchase, tax, discount } =
+      req.body;
+     
+
+    const existingPayable = await payableModel.findById(id);
+
+    if (!existingPayable) {
+      return resp.json({ message: "Payable not found", success: false });
     }
 
-   
+     // update purchase status isPaid
+
+     const selectedPurchase = await purchaseModel.findById(purchase);
+     selectedPurchase.isPaid = status;
+     await selectedPurchase.save();
+
+
+     // update payable
+
+     existingPayable.status = status;
+     existingPayable.paid = paid;
+     existingPayable.method = method;
+     existingPayable.paymentDate = paymentDate;
+     existingPayable.purchase = purchase;
+     existingPayable.tax = tax;
+     existingPayable.discount = discount;
+ 
+     await existingPayable.save();
+    
+
+    return resp.json({
+      message: "Payable update successfuly",
+      success: true,
+    });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const deletePayablePurchaseHandler = async (req, resp) => {
+  try {
+    const { id } = req.params;
+    await payableModel.findByIdAndDelete(id);
+
+    return resp.json({
+      message: "Payable deleted successfuly",
+      success: true,
+    });
   } catch (e) {
     console.log(e.message);
   }
@@ -206,4 +272,7 @@ module.exports = {
 
   addPayablePurchaseHandler,
   singlePurchaseInvoice,
+  payableHandler,
+  updatePayablePurchaseHandler,
+  deletePayablePurchaseHandler
 };
