@@ -4,6 +4,8 @@ const {
   transactionModel,
   purchaseModel,
   payableModel,
+  saleModel,
+  receivableModel,
 } = require("../models");
 const { codeCreator } = require("../utilits/function");
 const { codeMiddleNames } = require("../utilits/const");
@@ -259,7 +261,125 @@ const deletePayablePurchaseHandler = async (req, resp) => {
   }
 };
 
-// purchase
+// receivable
+
+const addReceivableHandler = async (req, resp) => {
+  try {
+
+    let { status, paid, method, saleDate, sale, tax, discount } =
+      req.body;
+
+    const code = await codeCreator({
+      model: payableModel,
+      codeStr: codeMiddleNames["receivable"],
+    });
+
+    // update receivable status isPaid
+
+    const selectedSale = await saleModel.findById(sale);
+    selectedSale.isPaid = status;
+    await selectedSale.save();
+
+    // add new receivable
+
+    const newReceivable = await receivableModel.create({
+      code,
+      status, paid, method, saleDate, sale, tax, discount
+    });
+
+    await newReceivable.save();
+
+    return resp.json({
+      message: "Receivable added successfuly",
+      success: true,
+    });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const singleReceivableInvoice = async (req, resp) => {
+  try {
+    const { invoice } = req.params;
+
+   
+
+    const selectedSale = await receivableModel.findOne({ sale: invoice });
+
+    if (selectedSale) {
+      resp.json({ success: true, data: selectedSale });
+    } 
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const receivableHandler = async (req, resp) => {
+  try {
+    let sales = await receivableModel
+      .find({})
+      .populate("sale", "code totalAmount status");
+
+    return resp.json({ sales });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const deleteReceivableSaleHandler = async (req, resp) => {
+  try {
+    const { id } = req.params;
+    await receivableModel.findByIdAndDelete(id);
+
+    return resp.json({
+      message: "Receivable deleted successfuly",
+      success: true,
+    });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
+const updateReceivableSaleHandler = async (req, resp) => {
+  try {
+    let { id, status, paid, method, saleDate, sale, tax, discount } =
+      req.body;
+     
+
+    const existingReceivable = await receivableModel.findById(id);
+
+    if (!existingReceivable) {
+      return resp.json({ message: "Receivable not found", success: false });
+    }
+
+     // update sale status isPaid
+
+     const selectedSale = await saleModel.findById(sale);
+     selectedSale.isPaid = status;
+     await selectedSale.save();
+
+
+     // update receivable
+
+     existingReceivable.status = status;
+     existingReceivable.paid = paid;
+     existingReceivable.method = method;
+     existingReceivable.saleDate = saleDate;
+     existingReceivable.sale = sale;
+     existingReceivable.tax = tax;
+     existingReceivable.discount = discount;
+ 
+     await existingReceivable.save();
+    
+
+    return resp.json({
+      message: "Receivable update successfuly",
+      success: true,
+    });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
 
 module.exports = {
   newTransactionHandler,
@@ -274,5 +394,12 @@ module.exports = {
   singlePurchaseInvoice,
   payableHandler,
   updatePayablePurchaseHandler,
-  deletePayablePurchaseHandler
+  deletePayablePurchaseHandler,
+
+  // receivable
+  addReceivableHandler,
+  singleReceivableInvoice,
+  receivableHandler,
+  deleteReceivableSaleHandler,
+  updateReceivableSaleHandler
 };

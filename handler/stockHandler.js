@@ -191,7 +191,7 @@ const productsHandler = async (req, resp) => {
 
 const addProductHandler = async (req, resp) => {
   try {
-    let { productName, sku, category, warehouse, lowStockThreshold } = req.body;
+    let { productName, sku, category, warehouse, lowStockThreshold, price } = req.body;
 
     const existingProduct = await stockModel.findOne({
       productName: { $regex: new RegExp("^" + productName + "$", "i") },
@@ -210,6 +210,7 @@ const addProductHandler = async (req, resp) => {
       category,
       warehouse,
       lowStockThreshold,
+      price
     });
 
     await newProduct.save();
@@ -235,7 +236,7 @@ const deleteProductHandler = async (req, resp) => {
 };
 
 const updateProductHandler = async (req, res) => {
-  let { _id, productName, sku, category, warehouse, lowStockThreshold } =
+  let { _id, productName, sku, category, warehouse, lowStockThreshold, price } =
     req.body;
 
  
@@ -252,7 +253,8 @@ const updateProductHandler = async (req, res) => {
     producttoUpdate.category = category;
     producttoUpdate.warehouse = warehouse;
     producttoUpdate.lowStockThreshold = lowStockThreshold;
-
+    producttoUpdate.price = price;
+    
     await producttoUpdate.save();
 
     return res.json({

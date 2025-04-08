@@ -249,12 +249,26 @@ const confirmSaleHandler = async (req, res) => {
   }
 };
 
+const singleSaleHandler = async (req, resp) => {
+  try {
+    const {id} = req.params
+
+    const sale = await saleModel.findById(id).populate("customerId", "name code").populate("items.productId", "_id productName")
+
+
+
+    return resp.json({ sale });
+  } catch (e) {
+    console.log(e.message);
+  }
+};
+
 module.exports = {
   addCustomerHandler,
   customersHandler,
   updateCustomersHandler,
   deleteCustomerHandler,
-
+  singleSaleHandler,
   newSellingHandler,
   addSellingHandler,
   salesHandler,

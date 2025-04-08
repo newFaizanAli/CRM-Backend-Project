@@ -4,23 +4,111 @@ const {
   purchaseModel,
   payableModel,
   supplierModel,
+  saleModel,
 } = require("../models");
 const mongoose = require("mongoose");
 
-// const { codeCreator } = require("../utilits/function");
-
 const stockDashboard = async (req, resp) => {
   try {
-    let products = await stockModel.countDocuments({});
-    let warehouses = await warehouseModel.countDocuments({});
+    let products = await stockModel.find({}).select("_id sku code productName");
+    let warehouses = await warehouseModel.find({}).select("_id area city");
+    const lowStockCount = await stockModel.countDocuments({
+      $expr: { $lte: ["$quantity", "$lowStockThreshold"] },
+    });
 
-    const lowStockProducts = await stockModel
-      .find({ $expr: { $lt: ["$quantity", "$lowStockThreshold"] } })
-      .select("code productName sku quantity lowStockThreshold");
-
-    return resp.json({ products, warehouses, lowStockProducts });
+    return resp.json({ products, warehouses, lowStockCount });
   } catch (e) {
     console.log(e.message);
+  }
+};
+
+const lowstockProduct = async (req, resp) => {
+  try {
+    const { warehouse } = req.params;
+
+    // Build the base query for low stock items
+    const query = {
+      $expr: { $lt: ["$quantity", "$lowStockThreshold"] },
+    };
+
+    if (warehouse && mongoose.Types.ObjectId.isValid(warehouse)) {
+      query.warehouse = new mongoose.Types.ObjectId(warehouse);
+    }
+
+    const lowStockProducts = await stockModel
+      .find(query)
+      .select("code productName sku quantity lowStockThreshold warehouse")
+      .populate("warehouse", "name");
+    return resp.json({
+      success: true,
+      lowStockProducts,
+    });
+  } catch (e) {
+    console.error("Error in lowstockProduct:", e.message);
+    return resp.status(500).json({
+      success: false,
+      error: e.message,
+    });
+  }
+};
+
+const warehouseStockValue = async (req, resp) => {
+  try {
+    const { product } = req.params;
+
+    const pipeline = [];
+
+    // Filter by stock _id if a product ID is provided
+    if (product && mongoose.Types.ObjectId.isValid(product)) {
+      pipeline.push({
+        $match: {
+          _id: new mongoose.Types.ObjectId(product),
+        },
+      });
+    }
+
+    pipeline.push(
+      {
+        $lookup: {
+          from: "warehouses",
+          localField: "warehouse",
+          foreignField: "_id",
+          as: "warehouseData",
+        },
+      },
+      { $unwind: "$warehouseData" },
+      {
+        $group: {
+          _id: "$warehouseData._id",
+          area: { $first: "$warehouseData.area" },
+          city: { $first: "$warehouseData.city" },
+          value: {
+            $sum: {
+              $multiply: ["$quantity", "$price"],
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          area: 1,
+          city: 1,
+          value: 1,
+        },
+      },
+      { $sort: { value: -1 } }
+    );
+
+    const stockValue = await stockModel.aggregate(pipeline);
+
+    return resp.json({ success: true, stockValue });
+  } catch (e) {
+    console.error("Error in warehouseStockValue:", e.message);
+    return resp.json({
+      success: false,
+      error: e.message,
+    });
   }
 };
 
@@ -175,17 +263,19 @@ const buyingDashboard = async (req, resp) => {
   }
 };
 
-
 const buyingMonthlyPurchase = async (req, resp) => {
   try {
     const { supplier, startDate, endDate } = req.params;
-    
 
-    // Convert startDate and endDate to Date objects if they are provided
-    const start = startDate && startDate !== 'null' ? new Date(startDate) : new Date(new Date().getFullYear(), 0, 1); // Default to start of the year
-    const end = endDate && endDate !== 'null' ? new Date(endDate) : new Date(new Date().getFullYear(), 11, 31, 23, 59, 59); // Default to end of the year
+    const start =
+      startDate && startDate !== "null"
+        ? new Date(startDate)
+        : new Date(new Date().getFullYear(), 0, 1); // Default to start of the year
+    const end =
+      endDate && endDate !== "null"
+        ? new Date(endDate)
+        : new Date(new Date().getFullYear(), 11, 31, 23, 59, 59); // Default to end of the year
 
-    
     const match = {
       status: "Completed",
       createdAt: { $gte: start, $lte: end },
@@ -227,34 +317,81 @@ const buyingMonthlyPurchase = async (req, resp) => {
   }
 };
 
-
 const buyingPurchaseAmount = async (req, resp) => {
   try {
-    const { supplier, startDate, endDate } = req.params;
+    const { supplier, startDate, endDate, status } = req.params;
 
-    const startOfYear = new Date(new Date().getFullYear(), 0, 1);
-    const endOfYear = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59);
+    // Build date filter conditions dynamically
+    const dateFilter = {};
 
-    // const startOfYear = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), 0, 1);
-    // const endOfYear = endDate ? new Date(endDate) : new Date(new Date().getFullYear(), 11, 31, 23, 59, 59);
+    if (startDate && startDate !== "null") {
+      dateFilter.$gte = new Date(startDate);
+    }
 
+    if (endDate && endDate !== "null") {
+      dateFilter.$lte = new Date(endDate);
+    }
 
-    // Build filter
-    const purchaseFilter = {
-      status: "Completed",
-      isPaid: "Complete",
-      createdAt: { $gte: startOfYear, $lte: endOfYear },
-    };
+    // Prepare the base filter
+    const purchaseFilter = {};
+
+    // Handle different status cases
+    if (status === "null" || !status) {
+      // Default case - same as 'Completed'
+      purchaseFilter.status = "Completed";
+      purchaseFilter.isPaid = "Complete";
+    } else if (status === "Pending") {
+      purchaseFilter.status = "Pending";
+    } else if (status === "toBill") {
+      purchaseFilter.$or = [
+        { isPaid: { $ne: "Complete" } },
+        { isPaid: { $exists: false } },
+      ];
+    } else if (status === "toRecBill") {
+      purchaseFilter.status = "Pending";
+      purchaseFilter.$or = [
+        { isPaid: { $ne: "Complete" } },
+        { isPaid: { $exists: false } },
+      ];
+    } else if (status === "Completed") {
+      purchaseFilter.status = "Completed";
+      purchaseFilter.isPaid = "Complete";
+    }
+
+    // Add date filter if dates provided
+    if (Object.keys(dateFilter).length > 0) {
+      purchaseFilter.$and = purchaseFilter.$and || [];
+      purchaseFilter.$and.push({
+        $or: [{ createdAt: dateFilter }, { date: dateFilter }],
+      });
+    } else {
+      // Default to current year if no dates provided
+      const currentYear = new Date().getFullYear();
+      purchaseFilter.$and = purchaseFilter.$and || [];
+      purchaseFilter.$and.push({
+        $or: [
+          {
+            createdAt: {
+              $gte: new Date(currentYear, 0, 1),
+              $lte: new Date(currentYear, 11, 31, 23, 59, 59),
+            },
+          },
+          {
+            date: {
+              $gte: new Date(currentYear, 0, 1),
+              $lte: new Date(currentYear, 11, 31, 23, 59, 59),
+            },
+          },
+        ],
+      });
+    }
 
     if (supplier && mongoose.Types.ObjectId.isValid(supplier)) {
       purchaseFilter.supplierId = new mongoose.Types.ObjectId(supplier);
     }
 
-   
-
     // Step 1: Fetch purchases
     const purchases = await purchaseModel.find(purchaseFilter);
-   
 
     if (!purchases.length) {
       return resp.json({
@@ -272,11 +409,18 @@ const buyingPurchaseAmount = async (req, resp) => {
 
     const purchaseIds = purchases.map((p) => p._id);
 
-    // Step 2: Fetch payables
-    const payables = await payableModel.find({
-      purchase: { $in: purchaseIds },
-    });
-
+    // Step 2: Fetch payables (only for statuses that might have payables)
+    let payables = [];
+    if (
+      status === "null" ||
+      !status ||
+      status === "Completed" ||
+      status === "toRecBill"
+    ) {
+      payables = await payableModel.find({
+        purchase: { $in: purchaseIds },
+      });
+    }
 
     const totalPaid = payables.reduce((sum, p) => sum + (p.paid || 0), 0);
 
@@ -296,6 +440,7 @@ const buyingPurchaseAmount = async (req, resp) => {
       totalAmount,
       totalPaid,
       totalWithAdjustments: Math.round(totalWithAdjustments),
+      statusFilter: status || "null (treated as Completed)",
     });
   } catch (e) {
     console.error("Error in buyingPurchaseAmount:", e);
@@ -371,10 +516,288 @@ const buyingTopSupplier = async (req, resp) => {
   }
 };
 
+// selling
+
+const salesDashboard = async (req, resp) => {
+  try {
+    // other
+
+    const currentYear = new Date().getFullYear();
+    const today = new Date();
+
+    // Total yearly purchase
+    const totalSales = await saleModel.aggregate([
+      {
+        $match: {
+          status: "Completed",
+          createdAt: {
+            $gte: new Date(`${currentYear}-01-01`),
+            $lte: new Date(`${currentYear}-12-31`),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$totalAmount" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          totalAmount: 1,
+        },
+      },
+    ]);
+
+    const totalYearlySales = totalSales[0]?.totalAmount || 0;
+
+    // Last week and current week completed orders
+    const currentWeekStart = new Date(
+      today.setDate(today.getDate() - today.getDay())
+    );
+    const lastWeekStart = new Date(currentWeekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+    const lastWeekEnd = new Date(currentWeekStart);
+
+    const [result] = await saleModel.aggregate([
+      {
+        $facet: {
+          lastWeek: [
+            {
+              $match: {
+                status: "Completed",
+                createdAt: { $gte: lastWeekStart, $lt: lastWeekEnd },
+              },
+            },
+            { $group: { _id: null, total: { $sum: 1 } } },
+            { $project: { _id: 0, total: 1 } },
+          ],
+
+          currentWeek: [
+            {
+              $match: {
+                status: "Completed",
+                createdAt: { $gte: currentWeekStart },
+              },
+            },
+            { $group: { _id: null, total: { $sum: 1 } } },
+            { $project: { _id: 0, total: 1 } },
+          ],
+        },
+      },
+    ]);
+
+    const lastWeekOrders = result?.lastWeek[0]?.total || 0;
+    const currentWeekOrders = result?.currentWeek[0]?.total || 0;
+    const weekOrders = { lastWeekOrders, currentWeekOrders };
+
+    // Active suppliers by month
+    const startOfCurrentMonth = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      1
+    );
+    const endOfCurrentMonth = new Date(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      0
+    );
+    const startOfLastMonth = new Date(
+      today.getFullYear(),
+      today.getMonth() - 1,
+      1
+    );
+    const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+
+    const [customer_result] = await saleModel.aggregate([
+      {
+        $match: {
+          status: "Completed",
+          createdAt: {
+            $gte: startOfLastMonth,
+            $lte: endOfCurrentMonth,
+          },
+        },
+      },
+      {
+        $facet: {
+          lastMonth: [
+            {
+              $match: {
+                createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
+              },
+            },
+            { $group: { _id: "$customerId" } },
+            { $count: "totalCustomers" },
+          ],
+          currentMonth: [
+            {
+              $match: {
+                createdAt: {
+                  $gte: startOfCurrentMonth,
+                  $lte: endOfCurrentMonth,
+                },
+              },
+            },
+            { $group: { _id: "$customerId" } },
+            { $count: "totalCustomers" },
+          ],
+        },
+      },
+    ]);
+
+    const lastMonth = customer_result?.lastMonth?.[0]?.totalCustomers || 0;
+    const currentMonth =
+      customer_result?.currentMonth?.[0]?.totalCustomers || 0;
+    const activeCustomer = { lastMonth, currentMonth };
+
+    return resp.json({
+      totalYearlySales,
+      weekOrders,
+      activeCustomer,
+
+      // other
+
+      // suppliers,
+    });
+  } catch (e) {
+    console.log(e.message);
+    resp.status(500).json({ error: e.message });
+  }
+};
+
+const salesProformence = async (req, resp) => {
+  try {
+    const currentYear = new Date().getFullYear();
+
+    // Total yearly purchase
+
+    const totalPurchases = await purchaseModel.aggregate([
+      {
+        $match: {
+          status: "Completed",
+          createdAt: {
+            $gte: new Date(`${currentYear}-01-01`),
+            $lte: new Date(`${currentYear}-12-31`),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$totalAmount" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          totalAmount: 1,
+        },
+      },
+    ]);
+
+    const totalYearlyPurchases = totalPurchases[0]?.totalAmount || 0;
+
+    // Total yearly sale
+
+    const totalSales = await saleModel.aggregate([
+      {
+        $match: {
+          status: "Completed",
+          createdAt: {
+            $gte: new Date(`${currentYear}-01-01`),
+            $lte: new Date(`${currentYear}-12-31`),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$totalAmount" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          totalAmount: 1,
+        },
+      },
+    ]);
+
+    const totalYearlySales = totalSales[0]?.totalAmount || 0;
+
+    return resp.json({
+      totalYearlySales,
+      totalYearlyPurchases,
+    });
+  } catch (e) {
+    console.log(e.message);
+    resp.status(500).json({ error: e.message });
+  }
+};
+
+const receivingMonthlySale = async (req, resp) => {
+  try {
+    const { startDate, endDate } = req.params;
+
+    const start =
+      startDate && startDate !== "null"
+        ? new Date(startDate)
+        : new Date(new Date().getFullYear(), 0, 1); // Default to start of the year
+    const end =
+      endDate && endDate !== "null"
+        ? new Date(endDate)
+        : new Date(new Date().getFullYear(), 11, 31, 23, 59, 59); // Default to end of the year
+
+    const match = {
+      status: "Completed",
+      createdAt: { $gte: start, $lte: end },
+    };
+
+   
+
+    const monthlySales = await saleModel.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: { $month: "$createdAt" },
+          totalAmount: { $sum: "$totalAmount" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          month: "$_id",
+          totalAmount: 1,
+        },
+      },
+      { $sort: { month: 1 } }, 
+    ]);
+
+    // Fill in months that had no purchases with 0
+    const monthlyData = Array.from({ length: 12 }, (_, i) => ({
+      month: i + 1,
+      totalAmount:
+      monthlySales.find((m) => m.month === i + 1)?.totalAmount || 0,
+    }));
+
+    return resp.json({ monthlyData });
+  } catch (e) {
+    console.log("Error in receivingMonthlySale:", e.message);
+    resp.status(500).json({ error: e.message });
+  }
+};
 module.exports = {
   stockDashboard,
   buyingDashboard,
   buyingMonthlyPurchase,
   buyingPurchaseAmount,
   buyingTopSupplier,
+  lowstockProduct,
+  warehouseStockValue,
+
+  salesDashboard,
+  salesProformence,
+  receivingMonthlySale
 };

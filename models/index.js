@@ -44,6 +44,7 @@ const stockSchema = new mongoose.Schema({
     required: true,
   },
   lowStockThreshold: { type: Number, require: true },
+  price: { type: Number, defualt: true },
 });
 
 const userSchema = new mongoose.Schema({
@@ -160,6 +161,9 @@ const salesOrderSchema = new mongoose.Schema({
     default: "Pending",
   },
   createdAt: { type: Date, default: Date.now },
+
+  isPaid: { type: String },
+  date: { type: Date, default: Date.now }
 });
 
 const transactionSchema = new mongoose.Schema({
@@ -199,7 +203,20 @@ const payableSchema = new mongoose.Schema({
   paymentDate: { type: Date, default: Date.now },
 });
 
-
+const receivableSchema = new mongoose.Schema({
+  code: { type: String },
+  method: { type: String },
+  sale: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "sales",
+    required: true,
+  },
+  paid: Number,
+  tax: Number,
+  discount: Number,
+  status: { type: String },
+  saleDate: { type: Date, default: Date.now },
+});
 
 
 // CRM
@@ -383,4 +400,6 @@ module.exports = {
   interactionModel: mongoose.model("interaction", interactionSchema),
   
   payableModel: mongoose.model("payble", payableSchema), 
+  receivableModel: mongoose.model("receivable", receivableSchema), 
+  
 };

@@ -52,6 +52,7 @@ const {
   updateSaleHandler,
   confirmSaleHandler,
   deleteCustomerHandler,
+  singleSaleHandler,
 } = require("./handler/sellingHandler");
 
 const {
@@ -65,6 +66,11 @@ const {
   payableHandler,
   updatePayablePurchaseHandler,
   deletePayablePurchaseHandler,
+  singleReceivableInvoice,
+  addReceivableHandler,
+  receivableHandler,
+  deleteReceivableSaleHandler,
+  updateReceivableSaleHandler,
 } = require("./handler/transactionHandler");
 
 const cookieParser = require("cookie-parser");
@@ -104,7 +110,7 @@ server.use(bodyParser.urlencoded({ extended: true }));
 
 const { SECRETKEY } = require("./utilits/const");
 const { usersHandler, deleteUserHandler, updateUserHandler, newLeadHandler, leadHandler, addLeadHandler, deleteLeadHandler, convertLeadHandler, newDealHandler, addDealHandler, dealHandler, updateDealHandler, updateLeadHandler, newProjectHandler, projectHandler, addProjectHandler, deleteProjectHandler, deleteDealHandler, updateProjectHandler, newTaskHandler, taskHandler, addTaskHandler, updateTaskHandler, deleteTaskHandler, newInteractionHandler, interactionHandler, addInteractionHandler, deleteInteractionHandler, updateInteractionHandler } = require("./handler/crmHandler");
-const { stockDashboard, buyingDashboard, buyingMonthlyPurchase, buyingPurchaseAmount, buyingTopSupplier } = require("./handler/dashboardHandler");
+const { stockDashboard, buyingDashboard, buyingMonthlyPurchase, buyingPurchaseAmount, buyingTopSupplier, lowstockProduct, warehouseStockValue, salesDashboard, salesProformence, receivingMonthlySale } = require("./handler/dashboardHandler");
 
 // middleware
 
@@ -211,6 +217,8 @@ server.delete("/customer/:id", authMiddleware, deleteCustomerHandler);
 
 // selling
 
+server.get("/sale/:id", authMiddleware, singleSaleHandler);
+
 server.post("/sale/add", authMiddleware, addSellingHandler);
 
 server.get("/newsale", authMiddleware, newSellingHandler);
@@ -222,7 +230,7 @@ server.delete("/sale/:id", authMiddleware, deleteSaleHandler);
 server.put("/sale", authMiddleware, updateSaleHandler);
 
 server.post("/sale/confirm/:id", authMiddleware, confirmSaleHandler);
-
+ 
 // transaction
 
 server.get("/newtransaction", authMiddleware, newTransactionHandler);
@@ -330,12 +338,27 @@ server.put("/payable/purchase", authMiddleware, updatePayablePurchaseHandler);
 
 server.delete("/payable/purchase/:id", authMiddleware, deletePayablePurchaseHandler);
 
+// receivable
+
+server.get("/receivable/sale/:invoice", authMiddleware, singleReceivableInvoice);
+
+server.post("/receivable/sale", authMiddleware, addReceivableHandler);
+
+server.get("/receivable/sale", authMiddleware, receivableHandler);
+
+server.delete("/receivable/sale/:id", authMiddleware, deleteReceivableSaleHandler);
+
+server.put("/receivable/sale", authMiddleware, updateReceivableSaleHandler);
 
 // dashboard
 
 // stock
 
 server.get("/erp/stock/dashboard", authMiddleware, stockDashboard);
+
+server.get("/erp/stock/dashboard/lowstock/:warehouse?", authMiddleware, lowstockProduct);
+
+server.get("/erp/stock/dashboard/stockvalue/:product?", authMiddleware, warehouseStockValue);
 
 
 // buying
@@ -347,6 +370,14 @@ server.get("/erp/buying/dashboard/purchase/supplier/:supplier?/:startDate?/:endD
 server.get("/erp/buying/dashboard", authMiddleware, buyingDashboard);
 
 server.get("/erp/buying/dashboard/purchase/:supplier?/:startDate?/:endDate?", authMiddleware, buyingMonthlyPurchase);
+
+// selling
+
+server.get("/erp/sales/dashboard", authMiddleware, salesDashboard);
+
+server.get("/erp/sales/dashboard/performance", authMiddleware, salesProformence);
+
+server.get("/erp/receiving/dashboard/sales/:startDate?/:endDate?", authMiddleware, receivingMonthlySale);
 
 
 
