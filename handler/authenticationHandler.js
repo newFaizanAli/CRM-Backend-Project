@@ -94,18 +94,18 @@ const signinHandler = async (req, resp) => {
 
       const token = jwt.sign(data, SECRETKEY, { expiresIn: "30m" });
 
-      const cookiesCredentials = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        secure: true,
-        sameSite: "None",
-        path: "/",
-        maxAge: 3600000,
-      };
+      // const cookiesCredentials = {
+      //   httpOnly: true,
+      //   secure: process.env.NODE_ENV === "production",
+      //   secure: true,
+      //   sameSite: "None",
+      //   path: "/",
+      //   maxAge: 3600000,
+      // };
 
-      resp.cookie("token", token, cookiesCredentials);
+      // resp.cookie("token", token, cookiesCredentials);
 
-      // resp.cookie("token", token);
+      resp.cookie("token", token);
 
       return resp.json({
         login: true,
@@ -153,19 +153,19 @@ const signupHandler = async (req, resp) => {
 
 const signoutHandler = (req, resp) => {
 
-  resp.clearCookie("token", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "None",
-    path: "/",
-    maxAge: 0,
-  });
+  // resp.clearCookie("token", {
+  //   httpOnly: true,
+  //   secure: true,
+  //   sameSite: "None",
+  //   path: "/",
+  //   maxAge: 0,
+  // });
 
-  resp.set("Cache-Control", "no-store");
-  resp.set("Pragma", "no-cache");
-  resp.set("Expires", "0");
+  // resp.set("Cache-Control", "no-store");
+  // resp.set("Pragma", "no-cache");
+  // resp.set("Expires", "0");
 
-  // resp.cookie("token", "");
+  resp.cookie("token", "");
 
   resp.json({ token: false });
 };
