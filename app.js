@@ -109,8 +109,52 @@ server.use(cookieParser());
 server.use(bodyParser.urlencoded({ extended: true }));
 
 const { SECRETKEY } = require("./utilits/const");
-const { usersHandler, deleteUserHandler, updateUserHandler, newLeadHandler, leadHandler, addLeadHandler, deleteLeadHandler, convertLeadHandler, newDealHandler, addDealHandler, dealHandler, updateDealHandler, updateLeadHandler, newProjectHandler, projectHandler, addProjectHandler, deleteProjectHandler, deleteDealHandler, updateProjectHandler, newTaskHandler, taskHandler, addTaskHandler, updateTaskHandler, deleteTaskHandler, newInteractionHandler, interactionHandler, addInteractionHandler, deleteInteractionHandler, updateInteractionHandler } = require("./handler/crmHandler");
-const { stockDashboard, buyingDashboard, buyingMonthlyPurchase, buyingPurchaseAmount, buyingTopSupplier, lowstockProduct, warehouseStockValue, salesDashboard, salesProformence, receivingMonthlySale } = require("./handler/dashboardHandler");
+const {
+  usersHandler,
+  deleteUserHandler,
+  updateUserHandler,
+  newLeadHandler,
+  leadHandler,
+  addLeadHandler,
+  deleteLeadHandler,
+  convertLeadHandler,
+  newDealHandler,
+  addDealHandler,
+  dealHandler,
+  updateDealHandler,
+  updateLeadHandler,
+  newProjectHandler,
+  projectHandler,
+  addProjectHandler,
+  deleteProjectHandler,
+  deleteDealHandler,
+  updateProjectHandler,
+  newTaskHandler,
+  taskHandler,
+  addTaskHandler,
+  updateTaskHandler,
+  deleteTaskHandler,
+  newInteractionHandler,
+  interactionHandler,
+  addInteractionHandler,
+  deleteInteractionHandler,
+  updateInteractionHandler,
+} = require("./handler/crmHandler");
+const {
+  stockDashboard,
+  buyingDashboard,
+  buyingMonthlyPurchase,
+  buyingPurchaseAmount,
+  buyingTopSupplier,
+  lowstockProduct,
+  warehouseStockValue,
+  salesDashboard,
+  salesProformence,
+  salesMonthlySale,
+  salesAmount,
+  salesTopSupplier,
+  accountDashboard,
+} = require("./handler/dashboardHandler");
 
 // middleware
 
@@ -174,8 +218,6 @@ server.delete("/products/:id", authMiddleware, deleteProductHandler);
 
 server.put("/products", authMiddleware, updateProductHandler);
 
-
-
 // supplier
 
 server.get("/supplier", authMiddleware, suppliersHandler);
@@ -204,8 +246,7 @@ server.put("/purchase", authMiddleware, updatePurchaseHandler);
 
 server.post("/purchase/confirm/:id", authMiddleware, confirmPurchaseHandler);
 
-
-// customer 
+// customer
 
 server.post("/customer/add", authMiddleware, addCustomerHandler);
 
@@ -230,7 +271,7 @@ server.delete("/sale/:id", authMiddleware, deleteSaleHandler);
 server.put("/sale", authMiddleware, updateSaleHandler);
 
 server.post("/sale/confirm/:id", authMiddleware, confirmSaleHandler);
- 
+
 // transaction
 
 server.get("/newtransaction", authMiddleware, newTransactionHandler);
@@ -242,9 +283,6 @@ server.post("/transaction/:id", authMiddleware, addTransactionHandler);
 server.delete("/transaction/:id", authMiddleware, deleteTransactionHandler);
 
 server.put("/transaction", authMiddleware, updateTransactionHandler);
-
-
-
 
 // CRM
 
@@ -260,7 +298,6 @@ server.put("/user", authMiddleware, updateUserHandler);
 
 server.post("/password/reset", authMiddleware, resetPassword);
 
-
 // leads
 
 server.get("/newleads", authMiddleware, newLeadHandler);
@@ -275,7 +312,6 @@ server.post("/lead/convert/:id", authMiddleware, convertLeadHandler);
 
 server.put("/lead", authMiddleware, updateLeadHandler);
 
-
 // deals
 
 server.get("/newdeal", authMiddleware, newDealHandler);
@@ -287,7 +323,6 @@ server.post("/deal", authMiddleware, addDealHandler);
 server.put("/deal", authMiddleware, updateDealHandler);
 
 server.delete("/deal/:id", authMiddleware, deleteDealHandler);
-
 
 // project
 
@@ -310,7 +345,7 @@ server.get("/task", authMiddleware, taskHandler);
 server.post("/task", authMiddleware, addTaskHandler);
 
 server.delete("/task/:id", authMiddleware, deleteTaskHandler);
- 
+
 server.put("/task", authMiddleware, updateTaskHandler);
 
 // interaction
@@ -327,7 +362,6 @@ server.put("/interaction", authMiddleware, updateInteractionHandler);
 
 // payable
 
-
 server.get("/payable/purchase/:invoice", authMiddleware, singlePurchaseInvoice);
 
 server.post("/payable/purchase", authMiddleware, addPayablePurchaseHandler);
@@ -336,17 +370,29 @@ server.get("/payable/purchase", authMiddleware, payableHandler);
 
 server.put("/payable/purchase", authMiddleware, updatePayablePurchaseHandler);
 
-server.delete("/payable/purchase/:id", authMiddleware, deletePayablePurchaseHandler);
+server.delete(
+  "/payable/purchase/:id",
+  authMiddleware,
+  deletePayablePurchaseHandler
+);
 
 // receivable
 
-server.get("/receivable/sale/:invoice", authMiddleware, singleReceivableInvoice);
+server.get(
+  "/receivable/sale/:invoice",
+  authMiddleware,
+  singleReceivableInvoice
+);
 
 server.post("/receivable/sale", authMiddleware, addReceivableHandler);
 
 server.get("/receivable/sale", authMiddleware, receivableHandler);
 
-server.delete("/receivable/sale/:id", authMiddleware, deleteReceivableSaleHandler);
+server.delete(
+  "/receivable/sale/:id",
+  authMiddleware,
+  deleteReceivableSaleHandler
+);
 
 server.put("/receivable/sale", authMiddleware, updateReceivableSaleHandler);
 
@@ -356,30 +402,75 @@ server.put("/receivable/sale", authMiddleware, updateReceivableSaleHandler);
 
 server.get("/erp/stock/dashboard", authMiddleware, stockDashboard);
 
-server.get("/erp/stock/dashboard/lowstock/:warehouse?", authMiddleware, lowstockProduct);
+server.get(
+  "/erp/stock/dashboard/lowstock/:warehouse?",
+  authMiddleware,
+  lowstockProduct
+);
 
-server.get("/erp/stock/dashboard/stockvalue/:product?", authMiddleware, warehouseStockValue);
-
+server.get(
+  "/erp/stock/dashboard/stockvalue/:product?",
+  authMiddleware,
+  warehouseStockValue
+);
 
 // buying
 
-server.get("/erp/buying/dashboard/purchase/amount/:supplier?/:startDate?/:endDate?/:status?", authMiddleware, buyingPurchaseAmount);
+server.get(
+  "/erp/buying/dashboard/purchase/amount/:supplier?/:startDate?/:endDate?/:status?",
+  authMiddleware,
+  buyingPurchaseAmount
+);
 
-server.get("/erp/buying/dashboard/purchase/supplier/:supplier?/:startDate?/:endDate?", authMiddleware, buyingTopSupplier);
+server.get(
+  "/erp/buying/dashboard/purchase/supplier/:supplier?/:startDate?/:endDate?",
+  authMiddleware,
+  buyingTopSupplier
+);
 
 server.get("/erp/buying/dashboard", authMiddleware, buyingDashboard);
 
-server.get("/erp/buying/dashboard/purchase/:supplier?/:startDate?/:endDate?", authMiddleware, buyingMonthlyPurchase);
+server.get(
+  "/erp/buying/dashboard/purchase/:supplier?/:startDate?/:endDate?",
+  authMiddleware,
+  buyingMonthlyPurchase
+);
 
 // selling
 
-server.get("/erp/sales/dashboard", authMiddleware, salesDashboard);
+server.get("/erp/selling/dashboard", authMiddleware, salesDashboard);
 
-server.get("/erp/sales/dashboard/performance", authMiddleware, salesProformence);
+server.get(
+  "/erp/selling/dashboard/performance",
+  authMiddleware,
+  salesProformence
+);
 
-server.get("/erp/receiving/dashboard/sales/:startDate?/:endDate?", authMiddleware, receivingMonthlySale);
+server.get(
+  "/erp/selling/dashboard/sales/:startDate?/:endDate?",
+  authMiddleware,
+  salesMonthlySale
+); 
+ 
+server.get(
+  "/erp/selling/dashboard/sales/amount/:customer?/:startDate?/:endDate?/:status?",
+  authMiddleware,
+  salesAmount
+);
+
+server.get(
+  "/erp/selling/dashboard/sales/customer/:customer?/:startDate?/:endDate?",
+  authMiddleware,
+  salesTopSupplier
+);
+
+// account
+
+server.get("/account/dashboard", authMiddleware, accountDashboard);
 
 
+
+// server
 
 server.get("/server", async (req, resp) => {
   try {

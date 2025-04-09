@@ -5,6 +5,8 @@ const {
   payableModel,
   supplierModel,
   saleModel,
+  receivableModel,
+  customerModel,
 } = require("../models");
 const mongoose = require("mongoose");
 
@@ -522,6 +524,8 @@ const salesDashboard = async (req, resp) => {
   try {
     // other
 
+    const customers = await customerModel.find({}).select("_id name code");
+
     const currentYear = new Date().getFullYear();
     const today = new Date();
 
@@ -659,7 +663,7 @@ const salesDashboard = async (req, resp) => {
 
       // other
 
-      // suppliers,
+      customers,
     });
   } catch (e) {
     console.log(e.message);
@@ -669,9 +673,8 @@ const salesDashboard = async (req, resp) => {
 
 const salesProformence = async (req, resp) => {
   try {
-    const currentYear = new Date().getFullYear();
 
-    // Total yearly purchase
+    const currentYear = new Date().getFullYear();
 
     const totalPurchases = await purchaseModel.aggregate([
       {
@@ -737,7 +740,7 @@ const salesProformence = async (req, resp) => {
   }
 };
 
-const receivingMonthlySale = async (req, resp) => {
+const salesMonthlySale = async (req, resp) => {
   try {
     const { startDate, endDate } = req.params;
 
@@ -755,8 +758,6 @@ const receivingMonthlySale = async (req, resp) => {
       createdAt: { $gte: start, $lte: end },
     };
 
-   
-
     const monthlySales = await saleModel.aggregate([
       { $match: match },
       {
@@ -772,14 +773,14 @@ const receivingMonthlySale = async (req, resp) => {
           totalAmount: 1,
         },
       },
-      { $sort: { month: 1 } }, 
+      { $sort: { month: 1 } },
     ]);
 
     // Fill in months that had no purchases with 0
     const monthlyData = Array.from({ length: 12 }, (_, i) => ({
       month: i + 1,
       totalAmount:
-      monthlySales.find((m) => m.month === i + 1)?.totalAmount || 0,
+        monthlySales.find((m) => m.month === i + 1)?.totalAmount || 0,
     }));
 
     return resp.json({ monthlyData });
@@ -788,6 +789,303 @@ const receivingMonthlySale = async (req, resp) => {
     resp.status(500).json({ error: e.message });
   }
 };
+
+const salesAmount = async (req, resp) => {
+  try {
+    const { customer, startDate, endDate, status } = req.params;
+
+    // Build date filter conditions dynamically
+    const dateFilter = {};
+
+    if (startDate && startDate !== "null") {
+      dateFilter.$gte = new Date(startDate);
+    }
+
+    if (endDate && endDate !== "null") {
+      dateFilter.$lte = new Date(endDate);
+    }
+
+    // Prepare the base filter
+    const saleFilter = {};
+
+    // Handle different status cases
+    if (status === "null" || !status) {
+      // Default case - same as 'Completed'
+      saleFilter.status = "Completed";
+      saleFilter.isPaid = "Complete";
+    } else if (status === "Pending") {
+      saleFilter.status = "Pending";
+    } else if (status === "toBill") {
+      saleFilter.$or = [
+        { isPaid: { $ne: "Complete" } },
+        { isPaid: { $exists: false } },
+      ];
+    } else if (status === "toRecBill") {
+      saleFilter.status = "Pending";
+      saleFilter.$or = [
+        { isPaid: { $ne: "Complete" } },
+        { isPaid: { $exists: false } },
+      ];
+    } else if (status === "Completed") {
+      saleFilter.status = "Completed";
+      saleFilter.isPaid = "Complete";
+    }
+
+    // Add date filter if dates provided
+    if (Object.keys(dateFilter).length > 0) {
+      saleFilter.$and = saleFilter.$and || [];
+      saleFilter.$and.push({
+        $or: [{ createdAt: dateFilter }, { date: dateFilter }],
+      });
+    } else {
+      // Default to current year if no dates provided
+      const currentYear = new Date().getFullYear();
+      saleFilter.$and = saleFilter.$and || [];
+      saleFilter.$and.push({
+        $or: [
+          {
+            createdAt: {
+              $gte: new Date(currentYear, 0, 1),
+              $lte: new Date(currentYear, 11, 31, 23, 59, 59),
+            },
+          },
+          {
+            date: {
+              $gte: new Date(currentYear, 0, 1),
+              $lte: new Date(currentYear, 11, 31, 23, 59, 59),
+            },
+          },
+        ],
+      });
+    }
+
+    if (customer && mongoose.Types.ObjectId.isValid(customer)) {
+      saleFilter.supplierId = new mongoose.Types.ObjectId(customer);
+    }
+
+    // Step 1: Fetch sales
+    const sales = await saleModel.find(saleFilter);
+
+    if (!sales.length) {
+      return resp.json({
+        totalAmount: 0,
+        totalPaid: 0,
+        totalWithAdjustments: 0,
+        message: "No sales found for given filter",
+      });
+    }
+
+    const totalAmount = sales.reduce(
+      (sum, sale) => sum + (sale.totalAmount || 0),
+      0
+    );
+
+    const saleIds = sales.map((p) => p._id);
+
+    // Step 2: Fetch sales (only for statuses that might have sales)
+    let receivable = [];
+    if (
+      status === "null" ||
+      !status ||
+      status === "Completed" ||
+      status === "toRecBill"
+    ) {
+      receivable = await receivableModel.find({
+        sale: { $in: saleIds },
+      });
+    }
+
+    const totalPaid = sales.reduce((sum, p) => sum + (p.paid || 0), 0);
+
+    // Step 3: Adjustments
+    let totalWithAdjustments = 0;
+    sales.forEach((s) => {
+      const relatedSale = sales.find((sl) => sl._id.equals(s.sale));
+      const amount = relatedSale?.totalAmount || 0;
+      const tax = (amount * (s.tax || 0)) / 100;
+      const discount = (amount * (s.discount || 0)) / 100;
+      totalWithAdjustments += amount + tax - discount;
+    });
+
+    return resp.json({
+      totalAmount,
+      totalPaid,
+      totalWithAdjustments: Math.round(totalWithAdjustments),
+      statusFilter: status || "null (treated as Completed)",
+    });
+  } catch (e) {
+    console.error("Error in receiving sales amount:", e);
+    resp.status(500).json({ error: e.message });
+  }
+};
+
+const salesTopSupplier = async (req, resp) => {
+  try {
+    const { customer, startDate, endDate } = req.params;
+
+    let matchCondition = { status: "Completed" };
+
+    if (customer && mongoose.Types.ObjectId.isValid(customer)) {
+      matchCondition.customerId = new mongoose.Types.ObjectId(customer);
+    }
+
+    if (
+      (startDate && startDate !== "null") ||
+      (endDate && endDate !== "null")
+    ) {
+      matchCondition.createdAt = {};
+
+      if (startDate && startDate !== "null") {
+        matchCondition.createdAt.$gte = new Date(startDate);
+      }
+
+      if (endDate && endDate !== "null") {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        matchCondition.createdAt.$lte = end;
+      }
+    }
+
+    const result = await saleModel.aggregate([
+      { $match: matchCondition },
+      {
+        $group: {
+          _id: "$customerId",
+          totalAmount: { $sum: "$totalAmount" },
+          saleCount: { $sum: 1 },
+        },
+      },
+      { $sort: { totalAmount: -1 } },
+      { $limit: 1 },
+      {
+        $lookup: {
+          from: "customers",
+          localField: "_id",
+          foreignField: "_id",
+          as: "customer",
+        },
+      },
+      { $unwind: "$customer" },
+      {
+        $project: {
+          _id: 0,
+          customerId: "$_id",
+          customerName: "$customer.name",
+          totalAmount: 1,
+          saleCount: 1,
+        },
+      },
+    ]);
+
+    resp.json(
+      result[0] || { success: false, message: "No top customer found" }
+    );
+  } catch (e) {
+    console.error("Error in sales top supplier:", e.message);
+    resp.status(500).json({ error: e.message });
+  }
+};
+
+// account
+
+
+const accountDashboard = async (req, resp) => {
+  try {
+    // Total outgoing (from sales)
+    const totalSales = await saleModel.aggregate([
+      {
+        $match: {
+          status: "Completed",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$totalAmount" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          totalAmount: 1,
+        },
+      },
+    ]);
+
+    const totalOutgoing = totalSales[0]?.totalAmount || 0;
+
+    // Total paid from receivables (sales payments)
+    const totalReceivables = await receivableModel.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalPaid: { $sum: "$paid" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          totalPaid: 1,
+        },
+      },
+    ]);
+
+    const totalPaidOutgoing = totalReceivables[0]?.totalPaid || 0;
+
+    // Total incoming (from purchases)
+    const totalPurchases = await purchaseModel.aggregate([
+      {
+        $match: {
+          status: "Completed",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$totalAmount" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          totalAmount: 1,
+        },
+      },
+    ]);
+
+    const totalIncomming = totalPurchases[0]?.totalAmount || 0;
+
+    // Total paid from payables (purchase payments)
+    const totalPayables = await payableModel.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalPaid: { $sum: "$paid" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          totalPaid: 1,
+        },
+      },
+    ]);
+
+    const totalPaidIncomming = totalPayables[0]?.totalPaid || 0;
+
+    return resp.json({
+      totalOutgoing,
+      totalPaidOutgoing,
+      totalIncomming,
+      totalPaidIncomming,
+    });
+  } catch (e) {
+    console.log(e.message);
+    resp.status(500).json({ error: e.message });
+  }
+};
+
+
 module.exports = {
   stockDashboard,
   buyingDashboard,
@@ -799,5 +1097,9 @@ module.exports = {
 
   salesDashboard,
   salesProformence,
-  receivingMonthlySale
+  salesMonthlySale,
+  salesAmount,
+  salesTopSupplier,
+
+  accountDashboard,
 };
